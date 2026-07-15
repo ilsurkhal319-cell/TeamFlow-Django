@@ -459,7 +459,6 @@ def api_boards_list(request):
     return JsonResponse({'success': True, 'boards': boards_data})
 
 
-@csrf_exempt
 def api_board_create(request):
     """API: Создание доски"""""
     if request.method == 'POST':
