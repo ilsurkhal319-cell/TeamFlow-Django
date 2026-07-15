@@ -530,7 +530,6 @@ def api_board_create(request):
     return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
 
 
-@csrf_exempt
 def api_task_create(request):
     """API: Создание задачи"""
     if request.method == 'POST':
@@ -578,7 +577,6 @@ def api_task_create(request):
     return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
 
 
-@csrf_exempt
 def api_workspace_create(request):
     """API: Создание рабочего пространства"""
     if request.method == 'POST':
@@ -613,7 +611,6 @@ def api_workspace_create(request):
     return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
 
 
-@csrf_exempt
 def api_board_delete(request, board_id):
     """API: Удаление доски"""
     if request.method == 'POST' or request.method == 'DELETE':
@@ -637,7 +634,6 @@ def api_board_delete(request, board_id):
     return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
 
 
-@csrf_exempt
 def api_board_favorite(request, board_id):
     """API: Переключение избранного"""
     if request.method == 'POST':
@@ -661,7 +657,6 @@ def api_board_favorite(request, board_id):
     return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
 
 
-@csrf_exempt
 def api_board_archive(request, board_id):
     """API: Архивирование/разархивирование доски"""
     if request.method == 'POST':
