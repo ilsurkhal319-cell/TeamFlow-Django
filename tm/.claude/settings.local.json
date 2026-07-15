@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(venv\\\\Scripts\\\\python.exe manage.py makemigrations flow)",
+      "Bash(./venv/Scripts/python.exe manage.py makemigrations flow)",
+      "Bash(C:/Users/ilsur/PycharmProjects/TeamFlow/tm/venv/Scripts/python.exe *)"
+    ]
+  }
+}

@@ -1,0 +1,145 @@
+{% extends 'flow/base.html' %}
+{% load static %}
+
+{% block title %}Архив — TeamFlow{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/archive.css' %}">
+{% endblock %}
+
+{% block content %}
+<!-- Хедер страницы -->
+<div class="flex items-center justify-between mb-8">
+    <div>
+        <h1 class="text-3xl font-bold mb-1">Архив</h1>
+        <p class="text-zinc-400" id="archiveCount">Архивированные доски • {{ boards|length }}</p>
+    </div>
+    <div class="flex items-center gap-4">
+        <!-- Поиск -->
+        <div class="relative">
+            <input type="text" id="archiveSearch" oninput="filterArchive()" placeholder="Поиск по архиву..." class="w-64 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-600 transition-colors">
+            <svg class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+        </div>
+        <!-- Фильтры типа -->
+        <div class="flex bg-zinc-900 rounded-xl p-1">
+            <button onclick="setTypeFilter('all')" id="filterAll" class="filter-btn active px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors">Все</button>
+            <button onclick="setTypeFilter('personal')" id="filterPersonal" class="filter-btn px-4 py-2 rounded-lg text-zinc-400 hover:text-zinc-100 text-sm transition-colors">Personal</button>
+            <button onclick="setTypeFilter('team')" id="filterTeam" class="filter-btn px-4 py-2 rounded-lg text-zinc-400 hover:text-zinc-100 text-sm transition-colors">Team</button>
+        </div>
+        <!-- Сортировка -->
+        <div class="relative">
+            <button onclick="toggleSortDropdown()" class="px-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl text-sm text-zinc-300 hover:bg-zinc-800 transition-colors flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
+                </svg>
+                По дате
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div id="sortDropdown" class="hidden absolute right-0 top-full mt-2 w-56 bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl z-50 overflow-hidden">
+                <button onclick="setSort('date_new')" class="w-full px-4 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    По дате (новые сверху)
+                </button>
+                <button onclick="setSort('date_old')" class="w-full px-4 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    По дате (старые сверху)
+                </button>
+                <button onclick="setSort('name_asc')" class="w-full px-4 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
+                    </svg>
+                    По названию (А → Я)
+                </button>
+                <button onclick="setSort('name_desc')" class="w-full px-4 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
+                    </svg>
+                    По названию (Я → А)
+                </button>
+                <button onclick="setSort('tasks_desc')" class="w-full px-4 py-3 text-left text-sm text-zinc-300 hover:bg-zinc-800 transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    По количеству задач (убывание)
+                </button>
+            </div>
+        </div>
+        <!-- Очистить архив -->
+        <button onclick="clearArchive()" class="px-4 py-2.5 rounded-xl border border-red-500/50 text-red-400 hover:bg-red-500/10 text-sm font-medium transition-colors flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+            Очистить архив
+        </button>
+    </div>
+</div>
+
+<!-- Сетка архивных досок -->
+<div id="archiveGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    {% for board in boards %}
+    <div class="archive-card group relative bg-zinc-900 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl hover:-translate-y-1 hover:brightness-110 transition-all duration-300 cursor-pointer">
+        <div class="h-1.5" style="background-color: {{ board.color }}"></div>
+        <div class="absolute top-4 right-4 opacity-50">
+            <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+            </svg>
+        </div>
+        <div class="p-6">
+            <h3 class="text-lg font-semibold mb-2 text-zinc-300">{{ board.title }}</h3>
+            <p class="text-zinc-500 text-sm mb-4">{{ board.description|default:"Описание отсутствует" }}</p>
+            <p class="text-xs text-zinc-500 mb-4 flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                Архивировано: {{ board.updated_at|date:"d E Y" }}
+            </p>
+            <div class="flex items-center gap-4 mb-4 text-sm text-zinc-500">
+                <span>{{ board.get_task_count }} задач</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="flex -space-x-2">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ request.user.username }}" class="w-7 h-7 rounded-full border-2 border-zinc-900">
+                </div>
+            </div>
+            <div class="absolute bottom-4 left-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onclick="toggleArchive({{ board.id }})" class="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-colors flex items-center justify-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Восстановить
+                </button>
+                <button onclick="confirmDeleteBoard(event, {{ board.id }}, '{{ board.title|escapejs }}')" class="flex-1 py-2 px-3 bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 text-sm font-medium rounded-xl transition-colors flex items-center justify-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    Удалить
+                </button>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-span-full flex flex-col items-center justify-center py-20">
+        <div class="w-24 h-24 bg-zinc-900 rounded-3xl flex items-center justify-center mb-6">
+            <svg class="w-12 h-12 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+            </svg>
+        </div>
+        <h2 class="text-2xl font-semibold mb-2">Архив пуст</h2>
+        <p class="text-zinc-400">Архивированные доски появятся здесь</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/archive.js' %}"></script>
+{% endblock %}

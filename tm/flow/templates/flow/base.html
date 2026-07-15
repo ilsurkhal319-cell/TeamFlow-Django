@@ -1,0 +1,854 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TeamFlow{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/profile_module.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen">
+    {% block header %}
+    <!-- Топ-хедер (по умолчанию) -->
+    <header class="h-16 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between px-6 fixed top-0 left-0 right-0 z-50">
+        <!-- Слева -->
+        <div class="flex items-center gap-6">
+            <a href="{% url 'home' %}" class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-violet-600 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
+                    </svg>
+                </div>
+                <span class="text-xl font-semibold">TeamFlow</span>
+            </a>
+            <button onclick="console.log('openBoardModal clicked'); if(typeof openBoardModal === 'function') { openBoardModal(); } else { alert('openBoardModal not found!'); }" class="bg-violet-600 hover:bg-violet-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:shadow-lg hover:shadow-violet-600/25 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Новая доска
+            </button>
+            <!-- Модалка создания доски -->
+            <div id="boardModal" class="fixed inset-0 z-[100] hidden">
+                <!-- затемнение -->
+                <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeBoardModal()"></div>
+                <!-- Modal контент -->
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-zinc-900 rounded-3xl border border-zinc-800 shadow-2xl overflow-hidden animate-modal-in">
+                    <!-- Цветная полоса -->
+                    <div id="boardColorStripe" class="h-[10px] bg-violet-600 transition-colors"></div>
+                    <!-- Заголовок -->
+                    <div class="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+                        <h2 class="text-2xl font-bold">Новая доска</h2>
+                        <button onclick="closeBoardModal()" class="text-zinc-400 hover:text-zinc-100 p-1 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <!-- Форма -->
+                    <div class="p-6 space-y-4">
+                        <!-- Название доски -->
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-300 mb-2">Название доски</label>
+                            <input type="text" id="boardTitle" placeholder="Например: Разработка мобильного приложения"
+                                class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 transition-colors">
+                            <p id="boardTitleError" class="hidden mt-2 text-sm text-red-400 flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Введите название доски
+                            </p>
+                        </div>
+                        <!-- Описание -->
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-300 mb-2">Описание <span class="text-zinc-500">(опционально)</span></label>
+                            <textarea id="boardDescription" placeholder="Кратко о целях и содержимом доски..." rows="3"
+                                class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 transition-colors resize-none"></textarea>
+                        </div>
+                        <!-- Выбор цвета -->
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-300 mb-2">Цвет доски</label>
+                            <div class="flex gap-3">
+                                <button type="button" data-color="violet" onclick="selectBoardColor(this, 'violet')" class="color-btn w-9 h-9 rounded-full bg-violet-600 ring-2 ring-white ring-offset-2 ring-offset-zinc-900 transition-all transform hover:scale-110"></button>
+                                <button type="button" data-color="pink" onclick="selectBoardColor(this, 'pink')" class="color-btn w-9 h-9 rounded-full bg-pink-500 ring-2 ring-transparent ring-offset-2 ring-offset-zinc-900 transition-all transform hover:scale-110"></button>
+                                <button type="button" data-color="cyan" onclick="selectBoardColor(this, 'cyan')" class="color-btn w-9 h-9 rounded-full bg-cyan-500 ring-2 ring-transparent ring-offset-2 ring-offset-zinc-900 transition-all transform hover:scale-110"></button>
+                                <button type="button" data-color="blue" onclick="selectBoardColor(this, 'blue')" class="color-btn w-9 h-9 rounded-full bg-blue-600 ring-2 ring-transparent ring-offset-2 ring-offset-zinc-900 transition-all transform hover:scale-110"></button>
+                                <button type="button" data-color="orange" onclick="selectBoardColor(this, 'orange')" class="color-btn w-9 h-9 rounded-full bg-orange-500 ring-2 ring-transparent ring-offset-2 ring-offset-zinc-900 transition-all transform hover:scale-110"></button>
+                                <button type="button" data-color="red" onclick="selectBoardColor(this, 'red')" class="color-btn w-9 h-9 rounded-full bg-red-500 ring-2 ring-transparent ring-offset-2 ring-offset-zinc-900 transition-all transform hover:scale-110"></button>
+                                <button type="button" data-color="emerald" onclick="selectBoardColor(this, 'emerald')" class="color-btn w-9 h-9 rounded-full bg-emerald-500 ring-2 ring-transparent ring-offset-2 ring-offset-zinc-900 transition-all transform hover:scale-110"></button>
+                                <button type="button" data-color="zinc" onclick="selectBoardColor(this, 'zinc')" class="color-btn w-9 h-9 rounded-full bg-zinc-600 ring-2 ring-transparent ring-offset-2 ring-offset-zinc-900 transition-all transform hover:scale-110"></button>
+                            </div>
+                        </div>
+                        <!-- Выбор рабочего пространства -->
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-300 mb-2">Рабочее пространство</label>
+                            <select id="boardWorkspace" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 transition-colors">
+                                <option value="personal">Personal</option>
+                                <option value="team">Team</option>
+                            </select>
+                        </div>
+                        <!-- Приватность -->
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="boardPrivate" class="w-4 h-4 rounded bg-zinc-950 border-zinc-700 text-violet-600 focus:ring-violet-600 focus:ring-offset-zinc-900">
+                            <span class="text-sm text-zinc-300">Сделать доску приватной</span>
+                        </label>
+                    </div>
+                    <!-- Кнопки -->
+                    <div class="px-6 py-4 border-t border-zinc-800 flex gap-3">
+                        <button onclick="closeBoardModal()" class="flex-1 py-3 px-4 rounded-xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 font-medium transition-colors">
+                            Отмена
+                        </button>
+                        <button onclick="createBoard()" class="flex-1 py-3 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold transition-colors">
+                            Создать доску
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Модалка создания рабочего пространства -->
+            <div id="workspaceModal" class="fixed inset-0 z-[100] hidden">
+                <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeCreateWorkspaceModal()"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-zinc-900 rounded-3xl border border-zinc-800 shadow-2xl overflow-hidden animate-modal-in">
+                    <div class="h-[10px] bg-violet-600"></div>
+                    <div class="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+                        <h2 class="text-2xl font-bold">Новое рабочее пространство</h2>
+                        <button onclick="closeCreateWorkspaceModal()" class="text-zinc-400 hover:text-zinc-100 p-1 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-300 mb-2">Название</label>
+                            <input type="text" id="workspaceName" placeholder="Например: Маркетинг"
+                                class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 transition-colors">
+                            <p id="workspaceNameError" class="hidden mt-2 text-sm text-red-400 flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Введите название
+                            </p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-300 mb-2">Описание <span class="text-zinc-500">(опционально)</span></label>
+                            <textarea id="workspaceDescription" placeholder="Кратко о пространстве..." rows="2"
+                                class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 transition-colors resize-none"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-300 mb-2">Тип</label>
+                            <div class="flex gap-3">
+                                <button type="button" onclick="selectWorkspaceType('personal')" id="typePersonal" class="flex-1 p-3 bg-zinc-950 rounded-xl border border-zinc-700 text-center transition-all">
+                                    <div class="w-8 h-8 bg-zinc-700 rounded-lg mx-auto mb-2 flex items-center justify-center text-sm font-semibold">P</div>
+                                    <p class="text-sm text-zinc-300">Personal</p>
+                                    <p class="text-xs text-zinc-500">Для личной работы</p>
+                                </button>
+                                <button type="button" onclick="selectWorkspaceType('team')" id="typeTeam" class="flex-1 p-3 bg-zinc-950 rounded-xl border border-zinc-700 text-center transition-all">
+                                    <div class="w-8 h-8 bg-violet-600 rounded-lg mx-auto mb-2 flex items-center justify-center text-sm font-semibold">T</div>
+                                    <p class="text-sm text-zinc-300">Team</p>
+                                    <p class="text-xs text-zinc-500">Для команды</p>
+                                </button>
+                            </div>
+                        </div>
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="workspacePrivate" class="w-4 h-4 rounded bg-zinc-950 border-zinc-700 text-violet-600 focus:ring-violet-600 focus:ring-offset-zinc-900">
+                            <span class="text-sm text-zinc-300">Сделать приватным</span>
+                        </label>
+                    </div>
+                    <div class="px-6 py-4 border-t border-zinc-800 flex gap-3">
+                        <button onclick="closeCreateWorkspaceModal()" class="flex-1 py-3 px-4 rounded-xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 font-medium transition-colors">
+                            Отмена
+                        </button>
+                        <button onclick="createWorkspace()" class="flex-1 py-3 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold transition-colors">
+                            Создать пространство
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- По центру -->
+        <div class="flex-1 max-w-md mx-8">
+            <div class="relative">
+                <input type="text" placeholder="Поиск по доскам и задачам..." class="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-600 transition-colors pl-10">
+                <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Справа -->
+        <div class="flex items-center gap-4">
+            <!-- Кнопка уведомлений -->
+            <div class="relative">
+                <button onclick="toggleNotificationsDropdown()" class="text-zinc-400 hover:text-zinc-100 p-2 transition-colors relative">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                    </svg>
+                    <span id="notificationDot" class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+                <!-- Дропдаун уведомлений -->
+                <div id="notificationsDropdown" class="hidden absolute top-full right-0 mt-2 w-[400px] bg-zinc-900 rounded-3xl border border-zinc-800 shadow-2xl z-50 overflow-hidden">
+                    <!-- Заголовок -->
+                    <div class="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+                        <h3 class="text-base font-semibold text-white">Уведомления</h3>
+                        <button onclick="markAllNotificationsRead()" class="text-xs text-violet-400 hover:text-violet-300 transition-colors">Отметить все прочитанными</button>
+                    </div>
+                    <!-- Вкладки -->
+                    <div class="flex border-b border-zinc-800">
+                        <button onclick="filterNotifications('all', this)" class="notification-tab flex-1 py-2 text-sm text-violet-400 border-b-2 border-violet-600">Все</button>
+                        <button onclick="filterNotifications('unread', this)" class="notification-tab flex-1 py-2 text-sm text-zinc-400 hover:text-zinc-200">Непрочитанные</button>
+                    </div>
+                    <!-- Список уведомлений -->
+                    <div id="notificationsList" class="max-h-[350px] overflow-y-auto">
+                        <!-- Уведомления будут добавлены через JS -->
+                    </div>
+                    <!-- Футер -->
+                    <div class="px-4 py-3 border-t border-zinc-800">
+                        <a href="#" class="text-sm text-violet-400 hover:text-violet-300 transition-colors">Показать все уведомления</a>
+                    </div>
+                </div>
+            </div>
+            <!-- Кнопка профиля -->
+            <button onclick="toggleProfileModal()" class="flex items-center gap-3 pl-4 border-l border-zinc-800 hover:bg-zinc-900 px-3 py-1.5 rounded-lg transition-colors">
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=You" class="w-8 h-8 rounded-full">
+                <span class="text-sm text-zinc-300">{{ user.username }}</span>
+                <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+
+            <!-- Модалка профиля -->
+            <div id="profileModal" class="hidden fixed inset-0 z-[100]">
+                <div class="absolute inset-0 bg-black/50" onclick="closeProfileModal()"></div>
+                <div class="absolute right-6 top-16 w-[360px] bg-zinc-900 rounded-2xl border border-zinc-800 shadow-2xl overflow-hidden animate-profile-in">
+                    <!-- Аватар и имя -->
+                    <div class="flex flex-col items-center py-8 px-6 border-b border-zinc-800">
+                        <div class="relative mb-4">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=You" class="w-20 h-20 rounded-full border-4 border-zinc-800">
+                            <span class="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 rounded-full border-2 border-zinc-900"></span>
+                        </div>
+                        <h2 class="text-xl font-bold text-zinc-100">{{ user.username }}</h2>
+                        <p class="text-sm text-zinc-400">@{{ user.username }}</p>
+                        <div class="flex items-center gap-1.5 mt-2 text-sm text-emerald-400">
+                            <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                            В сети
+                        </div>
+                    </div>
+
+                    <!-- Информация о пользователе -->
+                    <div class="px-6 py-4 border-b border-zinc-800 space-y-2">
+                        <p class="text-sm text-zinc-300">Full-stack разработчик</p>
+                        <p class="text-xs text-zinc-500">ils***@example.com</p>
+                    </div>
+
+                    <!-- Меню действий -->
+                    <nav class="py-2">
+                        <a href="{% url 'flow:profile' %}" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                            Профиль
+                        </a>
+                        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            Настройки
+                        </a>
+                        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Помощь
+                        </a>
+                    </nav>
+
+                    <!-- Выход -->
+                    <div class="py-2 border-t border-zinc-800">
+                        <a href="{% url 'users:logout' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                            </svg>
+                            Выйти из аккаунта
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    {% endblock %}
+
+    <div class="flex pt-16">
+        {% block sidebar %}
+        <!-- Сайдбар (по умолчанию) -->
+        <aside class="w-[280px] bg-zinc-900 border-r border-zinc-800 fixed left-0 top-16 bottom-0 flex flex-col">
+            <!-- Меню -->
+            <nav class="p-4 space-y-1">
+                <a href="{% url 'home' %}" data-page="home" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    Главная
+                </a>
+                <a href="{% url 'dashboard' %}" data-page="dashboard" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
+                    </svg>
+                    Мои доски
+                </a>
+                <a href="{% url 'favorites' %}" data-page="favorites" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                    </svg>
+                    Избранное
+                </a>
+                <a href="{% url 'flow:archive' %}" data-page="archive" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                    </svg>
+                    Архив
+                </a>
+            </nav>
+
+            <!-- Рабочие пространства -->
+            <div class="px-4 py-3">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Рабочие пространства</h3>
+                    <button onclick="openCreateWorkspaceModal()" class="p-1.5 rounded-lg text-violet-400 hover:text-violet-300 hover:bg-violet-600/10 transition-all" title="Добавить пространство">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="space-y-1 sidebar-workspace-list">
+                    <button onclick="selectWorkspace('personal')" data-workspace="personal" class="workspace-btn flex items-center gap-3 px-3 py-2 w-full rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-sm">
+                        <span class="w-5 h-5 bg-zinc-700 rounded flex items-center justify-center text-xs">P</span>
+                        <span>Personal</span>
+                    </button>
+                    <button onclick="selectWorkspace('team')" data-workspace="team" class="workspace-btn flex items-center gap-3 px-3 py-2 w-full rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-sm">
+                        <span class="w-5 h-5 bg-violet-600 rounded flex items-center justify-center text-xs">T</span>
+                        <span>Team</span>
+                    </button>
+                </div>
+                <!-- Кнопка приглашения -->
+                <button onclick="openInviteModal()" class="mt-2 w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                    </svg>
+                    Пригласить в команду
+                </button>
+            </div>
+
+            <!-- Список досок в сайдбаре -->
+            <div class="px-4 py-2 flex-1 overflow-y-auto">
+                <h3 class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Последние доски</h3>
+                <div class="space-y-1">
+                    {% if sidebar_boards %}
+                        {% for board in sidebar_boards %}
+                        <a href="{% url 'flow:board_detail' board.id %}" class="flex items-center gap-3 px-3 py-2 rounded-lg {% if forloop.first %}bg-zinc-800 text-zinc-100{% else %}text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800{% endif %} transition-colors text-sm">
+                            <span class="w-2 h-2 rounded-full" style="background-color: {{ board.color }}"></span>
+                            {{ board.title }}
+                        </a>
+                        {% endfor %}
+                    {% else %}
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-zinc-800 text-zinc-100 transition-colors text-sm">
+                        <span class="w-2 h-2 rounded-full bg-violet-500"></span>
+                        Разработка TeamFlow
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-sm">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        Маркетинг Q1
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-sm">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Личные цели
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Кнопка создания в сайдбаре -->
+            <div class="p-4 border-t border-zinc-800">
+                <button onclick="openBoardModal()" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-sm text-zinc-300 hover:text-zinc-100 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Создать доску
+                </button>
+            </div>
+        </aside>
+        {% endblock %}
+
+        <!-- Основная область -->
+        <main class="{% block main_class %}flex-1 ml-[280px] p-8{% endblock %}">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    <script src="{% static 'js/base.js' %}"></script>
+    <script src="{% static 'js/mentions.js' %}"></script>
+    <script src="{% static 'js/profile_module.js' %}"></script>
+
+    <script>
+    // Выбранный тип рабочего пространства
+    let selectedWorkspaceType = 'personal';
+
+    // Открыть модалку создания рабочего пространства
+    function openCreateWorkspaceModal() {
+        // Сбрасываем форму
+        document.getElementById('workspaceName').value = '';
+        document.getElementById('workspaceDescription').value = '';
+        document.getElementById('workspacePrivate').checked = false;
+        document.getElementById('workspaceName').classList.remove('border-red-500');
+        document.getElementById('workspaceNameError').classList.add('hidden');
+
+        // Сбрасываем тип
+        selectedWorkspaceType = 'personal';
+        updateWorkspaceTypeButtons();
+
+        // Показываем модалку
+        document.getElementById('workspaceModal').classList.remove('hidden');
+
+        setTimeout(function() {
+            document.getElementById('workspaceName').focus();
+        }, 100);
+    }
+
+    // Закрыть модалку рабочего пространства
+    function closeCreateWorkspaceModal() {
+        document.getElementById('workspaceModal').classList.add('hidden');
+    }
+
+    // Выбрать тип рабочего пространства
+    function selectWorkspaceType(type) {
+        selectedWorkspaceType = type;
+        updateWorkspaceTypeButtons();
+    }
+
+    // Обновить вид кнопок типа
+    function updateWorkspaceTypeButtons() {
+        var personalBtn = document.getElementById('typePersonal');
+        var teamBtn = document.getElementById('typeTeam');
+
+        if (selectedWorkspaceType === 'personal') {
+            personalBtn.classList.add('border-violet-600', 'ring-2', 'ring-violet-600', 'ring-offset-2', 'ring-offset-zinc-900');
+            personalBtn.classList.remove('border-zinc-700');
+            teamBtn.classList.remove('border-violet-600', 'ring-2', 'ring-violet-600', 'ring-offset-2', 'ring-offset-zinc-900');
+            teamBtn.classList.add('border-zinc-700');
+        } else {
+            teamBtn.classList.add('border-violet-600', 'ring-2', 'ring-violet-600', 'ring-offset-2', 'ring-offset-zinc-900');
+            teamBtn.classList.remove('border-zinc-700');
+            personalBtn.classList.remove('border-violet-600', 'ring-2', 'ring-violet-600', 'ring-offset-2', 'ring-offset-zinc-900');
+            personalBtn.classList.add('border-zinc-700');
+        }
+    }
+
+    // Создать рабочее пространство
+    function createWorkspace() {
+        var name = document.getElementById('workspaceName').value.trim();
+
+        if (!name) {
+            var input = document.getElementById('workspaceName');
+            var error = document.getElementById('workspaceNameError');
+
+            input.classList.add('border-red-500');
+            error.classList.remove('hidden');
+            input.classList.add('animate-shake');
+            setTimeout(function() {
+                input.classList.remove('animate-shake');
+            }, 500);
+            input.focus();
+            return;
+        }
+
+        var description = document.getElementById('workspaceDescription').value.trim();
+        var isPrivate = document.getElementById('workspacePrivate').checked;
+
+        console.log('Создание рабочего пространства:', {
+            name: name,
+            description: description,
+            type: selectedWorkspaceType,
+            isPrivate: isPrivate
+        });
+
+        // Отправка данных на сервер
+        var csrfToken = getCookie('csrftoken') || '';
+
+        fetch('/api/workspace/create/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                name: name,
+                description: description,
+                is_personal: (selectedWorkspaceType === 'personal')
+            })
+        })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(data) {
+            if (data.success) {
+                closeCreateWorkspaceModal();
+                showNotification('Рабочее пространство "' + name + '" создано');
+
+                // Добавляем новое рабочее пространство в сайдбар
+                var workspaceLists = document.querySelectorAll('.sidebar-workspace-list');
+                console.log('Found workspace lists:', workspaceLists.length);
+                if (workspaceLists.length > 0 && data.workspace) {
+                    workspaceLists.forEach(function(workspaceList) {
+                        var newWorkspaceBtn = document.createElement('button');
+                        newWorkspaceBtn.setAttribute('onclick', "selectWorkspace('" + data.workspace.id + "')");
+                        newWorkspaceBtn.setAttribute('data-workspace', data.workspace.id);
+                        newWorkspaceBtn.className = 'workspace-btn flex items-center gap-3 px-3 py-2 w-full rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-sm';
+
+                        var iconClass = data.workspace.is_personal ? 'bg-zinc-700' : 'bg-violet-600';
+                        var iconLetter = data.workspace.is_personal ? 'P' : 'T';
+
+                        newWorkspaceBtn.innerHTML =
+                            '<span class="w-5 h-5 ' + iconClass + ' rounded flex items-center justify-center text-xs">' + iconLetter + '</span>' +
+                            '<span>' + data.workspace.name + '</span>';
+
+                        workspaceList.appendChild(newWorkspaceBtn);
+                    });
+                }
+            } else {
+                showNotification('Ошибка: ' + (data.error || 'Не удалось создать рабочее пространство'));
+            }
+        })
+        .catch(function(error) {
+            console.error('Fetch error:', error);
+            showNotification('Ошибка при создании рабочего пространства');
+        });
+    }
+
+    // Закрытие по Escape для модалки рабочего пространства
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeCreateWorkspaceModal();
+        }
+    });
+</script>
+
+<script>
+    // Текущее выбранное рабочее пространство
+    let currentWorkspace = 'personal';
+
+    // Выбрать рабочее пространство
+    function selectWorkspace(workspace) {
+        currentWorkspace = workspace;
+
+        // Перезагрузить страницу с новым параметром workspace
+        const url = new URL(window.location);
+        url.searchParams.set('workspace', workspace);
+        window.location.href = url.toString();
+    }
+
+    // Инициализация при загрузке
+    document.addEventListener('DOMContentLoaded', function() {
+        // Подсветка активного пункта меню
+        var currentPath = window.location.pathname;
+        document.querySelectorAll('.sidebar-item').forEach(function(item) {
+            var href = item.getAttribute('href');
+            if (href === currentPath || (href && currentPath.startsWith(href))) {
+                item.classList.add('bg-violet-600/10', 'text-violet-400');
+                item.classList.remove('text-zinc-400');
+            }
+        });
+
+        // Получить workspace из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlWorkspace = urlParams.get('workspace');
+        if (urlWorkspace) {
+            currentWorkspace = urlWorkspace;
+        }
+        // Обновить вид кнопок при initial загрузке
+        document.querySelectorAll('.workspace-btn').forEach(function(btn) {
+            if (btn.dataset.workspace === currentWorkspace) {
+                btn.classList.add('bg-zinc-800', 'text-white');
+                btn.classList.remove('text-zinc-400');
+            }
+        });
+    });
+
+    // Применить фильтр сортировки
+    function applySortFilter(value) {
+        const url = new URL(window.location);
+        url.searchParams.set('sort', value);
+        window.location.href = url.toString();
+    }
+
+    // Модалка приглашения в команду
+    function openInviteModal() {
+        document.getElementById('inviteModal').classList.remove('hidden');
+        setTimeout(function() {
+            document.getElementById('inviteSearch').focus();
+        }, 100);
+    }
+
+    function closeInviteModal() {
+        document.getElementById('inviteModal').classList.add('hidden');
+        document.getElementById('inviteSearch').value = '';
+        document.getElementById('searchResults').innerHTML = '';
+    }
+
+    function copyInviteLink() {
+        const linkInput = document.getElementById('inviteLink');
+        linkInput.select();
+        document.execCommand('copy');
+        showInviteNotification('Скопировано!');
+    }
+
+    function showInviteNotification(message) {
+        const notif = document.getElementById('inviteNotification');
+        notif.textContent = message;
+        notif.classList.remove('hidden');
+        setTimeout(function() {
+            notif.classList.add('hidden');
+        }, 2000);
+    }
+
+    function searchUsers(query) {
+        var results = document.getElementById('searchResults');
+        if (query.length < 2) {
+            results.innerHTML = '';
+            return;
+        }
+        fetch('/api/users/search/?q=' + encodeURIComponent(query))
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (!data.success || data.users.length === 0) {
+                    results.innerHTML = '<p class="text-zinc-500 text-sm text-center py-4">Пользователи не найдены</p>';
+                    return;
+                }
+                var html = '';
+                for (var i = 0; i < data.users.length; i++) {
+                    var user = data.users[i];
+                    html += '<div class="flex items-center justify-between p-3 bg-zinc-950 rounded-xl hover:bg-zinc-900 transition-colors">' +
+                        '<div class="flex items-center gap-3">' +
+                            '<img src="https://api.dicebear.com/7.x/avataaars/svg?seed=' + user.username + '" class="w-10 h-10 rounded-full">' +
+                            '<div><p class="text-sm font-medium text-white">' + user.name + '</p>' +
+                            '<p class="text-xs text-zinc-400">@' + user.username + '</p></div></div>' +
+                            '<button onclick="inviteUser(' + user.id + ', \'' + user.username + '\')" class="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium rounded-lg transition-colors">Пригласить</button></div>';
+                }
+                results.innerHTML = html;
+            })
+            .catch(function(error) {
+                console.error('Search error:', error);
+                results.innerHTML = '<p class="text-zinc-500 text-sm text-center py-4">Ошибка поиска</p>';
+            });
+    }
+
+    function inviteUser(userId, username) {
+        showInviteNotification('Приглашение отправлено @' + username);
+    }
+
+    // Уведомления
+    var notificationsData = [];
+    var currentFilter = 'all';
+
+    // Загрузка уведомлений с сервера
+    function loadNotifications() {
+        fetch('/api/notifications/')
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    notificationsData = data.notifications.map(function(n) {
+                        var timeAgo = getTimeAgo(n.created_at);
+                        var typeLabels = {
+                            'mention': 'упомянул',
+                            'comment': 'оставил комментарий',
+                            'task_assigned': 'назначил задачу',
+                            'invite': 'пригласил'
+                        };
+                        return {
+                            id: n.id,
+                            type: n.type,
+                            user: 'Пользователь',
+                            avatar: n.type,
+                            text: n.text,
+                            time: timeAgo,
+                            unread: !n.is_read,
+                            link: n.link
+                        };
+                    });
+                    updateNotificationDot();
+                }
+            })
+            .catch(function() {});
+    }
+
+    function getTimeAgo(dateString) {
+        var date = new Date(dateString);
+        var now = new Date();
+        var diff = Math.floor((now - date) / 1000);
+
+        if (diff < 60) return 'Только что';
+        if (diff < 3600) return Math.floor(diff / 60) + ' мин. назад';
+        if (diff < 86400) return Math.floor(diff / 3600) + ' ч. назад';
+        if (diff < 604800) return Math.floor(diff / 86400) + ' дн. назад';
+        return date.toLocaleDateString('ru');
+    }
+
+    function toggleNotificationsDropdown() {
+        var dropdown = document.getElementById('notificationsDropdown');
+        dropdown.classList.toggle('hidden');
+        if (!dropdown.classList.contains('hidden')) {
+            loadNotifications();
+            renderNotifications();
+        }
+    }
+
+    function renderNotifications() {
+        var list = document.getElementById('notificationsList');
+        var filtered = currentFilter === 'all' ? notificationsData : notificationsData.filter(function(n) { return n.unread; });
+        if (filtered.length === 0) {
+            list.innerHTML = '<div class="p-4 text-center text-zinc-500">Нет уведомлений</div>';
+            return;
+        }
+        var html = '';
+        for (var i = 0; i < filtered.length; i++) {
+            var n = filtered[i];
+            var iconClass = '';
+            if (n.type === 'invite') iconClass = 'bg-violet-600';
+            else if (n.type === 'mention') iconClass = 'bg-blue-600';
+            else if (n.type === 'task_done') iconClass = 'bg-emerald-600';
+            else if (n.type === 'comment') iconClass = 'bg-amber-600';
+            else iconClass = 'bg-zinc-600';
+            html += '<div class="notification-item flex items-start gap-3 px-4 py-3 hover:bg-zinc-800 transition-colors cursor-pointer border-b border-zinc-800 ' + (n.unread ? 'bg-zinc-800/50' : '') + '" onclick="markNotificationRead(' + n.id + ')">' +
+                '<div class="relative"><img src="https://api.dicebear.com/7.x/avataaars/svg?seed=' + n.avatar + '" class="w-10 h-10 rounded-full">' +
+                '<div class="absolute -bottom-1 -right-1 w-5 h-5 ' + iconClass + ' rounded-full flex items-center justify-center">';
+            if (n.type === 'invite') html += '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>';
+            else if (n.type === 'mention') html += '<span class="text-white text-xs">@</span>';
+            else if (n.type === 'task_done') html += '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+            else if (n.type === 'comment') html += '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>';
+            else html += '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+            html += '</div></div>' +
+                '<div class="flex-1"><p class="text-sm text-zinc-100"><span class="font-medium">' + n.user + '</span> ' + n.text + '</p>' +
+                '<p class="text-xs text-zinc-500 mt-1">' + n.time + '</p></div>' +
+                (n.unread ? '<div class="w-2 h-2 bg-violet-500 rounded-full mt-2"></div>' : '') + '</div>';
+        }
+        list.innerHTML = html;
+    }
+
+    function filterNotifications(filter, btn) {
+        currentFilter = filter;
+        document.querySelectorAll('.notification-tab').forEach(function(b) {
+            b.classList.remove('text-violet-400', 'border-b-2', 'border-violet-600');
+            b.classList.add('text-zinc-400');
+        });
+        if (btn) {
+            btn.classList.add('text-violet-400', 'border-b-2', 'border-violet-600');
+            btn.classList.remove('text-zinc-400');
+        }
+        renderNotifications();
+    }
+
+    function markNotificationRead(id) {
+        // Отправляем запрос на сервер
+        fetch('/api/notifications/' + id + '/read/', { method: 'POST' })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                for (var i = 0; i < notificationsData.length; i++) {
+                    if (notificationsData[i].id === id) {
+                        notificationsData[i].unread = false;
+                    }
+                }
+                updateNotificationDot();
+                renderNotifications();
+            });
+    }
+
+    function markAllNotificationsRead() {
+        fetch('/api/notifications/read-all/', { method: 'POST' })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                for (var i = 0; i < notificationsData.length; i++) {
+                    notificationsData[i].unread = false;
+                }
+                updateNotificationDot();
+                renderNotifications();
+            });
+    }
+
+    function updateNotificationDot() {
+        var unreadCount = notificationsData.filter(function(n) { return n.unread; }).length;
+        var dot = document.getElementById('notificationDot');
+        if (unreadCount === 0) {
+            dot.classList.add('hidden');
+        } else {
+            dot.classList.remove('hidden');
+        }
+    }
+
+    // Закрыть дропдаун при клике вне
+    document.addEventListener('click', function(e) {
+        var dropdown = document.getElementById('notificationsDropdown');
+        var btn = document.querySelector('button[onclick="toggleNotificationsDropdown()"]');
+        if (dropdown && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+</script>
+
+<!-- Модалка приглашения в команду -->
+<div id="inviteModal" class="fixed inset-0 z-[100] hidden">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="closeInviteModal()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-zinc-900 rounded-3xl border border-zinc-800 shadow-2xl overflow-hidden animate-modal-in">
+        <!-- Цветная полоса -->
+        <div class="h-1.5 bg-gradient-to-r from-violet-600 to-fuchsia-500"></div>
+        <!-- Заголовок -->
+        <div class="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-bold text-white">Пригласить в команду</h2>
+                <p class="text-sm text-zinc-400">Найдите коллег или отправьте приглашение</p>
+            </div>
+            <button onclick="closeInviteModal()" class="text-zinc-400 hover:text-zinc-100 p-1 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <!-- Контент -->
+        <div class="p-6">
+            <!-- Поиск -->
+            <div class="relative mb-4">
+                <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <input type="text" id="inviteSearch" oninput="searchUsers(this.value)" placeholder="Поиск по username или email..."
+                    class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 pl-10 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-600 transition-colors">
+            </div>
+            <!-- Результаты поиска -->
+            <div id="searchResults" class="space-y-2 mb-4 max-h-[200px] overflow-y-auto"></div>
+            <!-- Разделитель -->
+            <div class="border-t border-zinc-800 my-4"></div>
+            <!-- Приглашение по ссылке -->
+            <div>
+                <p class="text-sm font-medium text-zinc-300 mb-2">Или поделитесь ссылкой</p>
+                <div class="flex gap-2">
+                    <input type="text" id="inviteLink" readonly value="https://teamflow.app/join/abc123"
+                        class="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 focus:outline-none">
+                    <button onclick="copyInviteLink()" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors">
+                        Копировать
+                    </button>
+                </div>
+                <p id="inviteNotification" class="hidden mt-2 text-sm text-emerald-400 flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>
