@@ -377,7 +377,6 @@ def profile(request):
     return render(request, 'flow/profile.html', context)
 
 @login_required
-@login_required
 def archive(request):
     archived_boards = Board.objects.filter(
         workspace__owner=request.user,
@@ -470,8 +469,6 @@ def api_board_create(request):
 
         try:
             data = json.loads(request.body)
-            print("API board create received:", data)
-
             user = request.user
 
             # Пытаемся найти workspace
