@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'users',
     'flow',
     'django_dump_load_utf8',
+    'rest_framework',
 ]
 
 AUTH_USER_MODEL = 'users.CustomUser'
