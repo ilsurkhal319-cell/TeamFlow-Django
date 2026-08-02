@@ -7,6 +7,7 @@ __pycache__/
 tm/db.sqlite3
 tm/media/
 tm/staticfiles/
+tm/data_backup*.json
 
 .env
 .idea/

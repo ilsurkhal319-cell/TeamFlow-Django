@@ -23,7 +23,7 @@ The project is inspired by tools like Trello and was built as a practice project
 
 - Python
 - Django
-- SQLite
+- PostgreSQL
 - HTML
 - CSS
 - JavaScript
