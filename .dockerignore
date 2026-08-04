@@ -1,0 +1,13 @@
+.git
+.idea
+.venv
+**/venv
+**/__pycache__
+*.pyc
+*.pyo
+.env
+
+tm/db.sqlite3
+tm/media
+tm/staticfiles
+tm/data_backup*.json
