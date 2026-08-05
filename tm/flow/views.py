@@ -1,12 +1,14 @@
 import json
+import logging
 from django.http import JsonResponse
 from django.shortcuts import render, HttpResponseRedirect, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
+from django.contrib import messages
 from .models import Workspace, Board, Task, Column, Label, Notification
 from .forms import WorkspaceForm, BoardForm, TaskForm, CommentForm, LabelForm
 from .services import create_mention_notifications
+from users.forms import UserProfileForm
 import re
 from django.contrib.auth import get_user_model
 
@@ -331,9 +333,33 @@ def favorites(request):
 
 @login_required
 def profile(request):
+    if request.method == 'POST':
+        profile_form = UserProfileForm(
+            request.POST,
+            request.FILES,
+            instance=request.user,
+        )
+        if profile_form.is_valid():
+            profile_form.save()
+            messages.success(request, 'Профиль сохранён.')
+            return redirect('flow:profile')
+    else:
+        profile_form = UserProfileForm(instance=request.user)
+
+    user_boards = Board.objects.filter(
+        workspace__owner=request.user,
+        is_archived=False,
+    )
+    user_tasks = Task.objects.filter(
+        column__board__workspace__owner=request.user,
+    )
     context = {
         'title': 'Профиль',
-        'sidebar_boards': get_sidebar_boards(request.user)
+        'sidebar_boards': get_sidebar_boards(request.user),
+        'profile_form': profile_form,
+        'board_count': user_boards.count(),
+        'task_count': user_tasks.count(),
+        'completed_task_count': user_tasks.filter(column__title__iexact='Done').count(),
     }
     return render(request, 'flow/profile.html', context)
 
@@ -357,9 +383,9 @@ def archive(request):
 
 from django.contrib.auth import get_user_model
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
-@csrf_exempt
 def api_user_search(request):
     """API: Поиск пользователей"""
     if not request.user.is_authenticated:
@@ -385,7 +411,6 @@ def api_user_search(request):
     return JsonResponse({'success': True, 'users': users_data})
 
 
-@csrf_exempt
 def api_boards_list(request):
     """API: Получение списка досок для выбранного workspace"""
     if not request.user.is_authenticated:
@@ -429,6 +454,19 @@ def api_board_create(request):
 
         try:
             data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Некорректные данные'}, status=400)
+
+        if not isinstance(data, dict):
+            return JsonResponse({'success': False, 'error': 'Некорректные данные'}, status=400)
+
+        title = str(data.get('title', '')).strip()
+        if not title:
+            return JsonResponse({'success': False, 'error': 'Введите название доски'}, status=400)
+        if len(title) > 150:
+            return JsonResponse({'success': False, 'error': 'Название доски слишком длинное'}, status=400)
+
+        try:
             user = request.user
 
             # Пытаемся найти workspace
@@ -463,7 +501,7 @@ def api_board_create(request):
                     )
 
             board = Board.objects.create(
-                title=data.get('title'),
+                title=title,
                 description=data.get('description', ''),
                 color=data.get('color', '#8B5CF6'),
                 workspace=workspace,
@@ -484,9 +522,9 @@ def api_board_create(request):
                     'color': board.color
                 }
             })
-        except Exception as e:
-            import traceback
-            return JsonResponse({'success': False, 'error': str(e), 'trace': traceback.format_exc()}, status=400)
+        except Exception:
+            logger.exception('Не удалось создать доску')
+            return JsonResponse({'success': False, 'error': 'Не удалось создать доску'}, status=500)
 
     return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
 
@@ -500,7 +538,23 @@ def api_task_create(request):
 
         try:
             data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Некорректные данные'}, status=400)
 
+        if not isinstance(data, dict):
+            return JsonResponse({'success': False, 'error': 'Некорректные данные'}, status=400)
+
+        title = str(data.get('title', '')).strip()
+        if not title:
+            return JsonResponse({'success': False, 'error': 'Введите название задачи'}, status=400)
+        if len(title) > 200:
+            return JsonResponse({'success': False, 'error': 'Название задачи слишком длинное'}, status=400)
+
+        priority = data.get('priority', 'medium')
+        if priority not in dict(Task.PRIORITY_CHOICES):
+            return JsonResponse({'success': False, 'error': 'Некорректный приоритет'}, status=400)
+
+        try:
             user = request.user
 
             column_id = data.get('column_id')
@@ -512,9 +566,9 @@ def api_task_create(request):
                 return JsonResponse({'success': False, 'error': 'Колонка не найдена'}, status=404)
 
             task = Task.objects.create(
-                title=data.get('title'),
+                title=title,
                 description=data.get('description', ''),
-                priority=data.get('priority', 'medium'),
+                priority=priority,
                 column=column,
                 created_by=user
             )
@@ -531,9 +585,9 @@ def api_task_create(request):
                     'priority': task.priority
                 }
             })
-        except Exception as e:
-            import traceback
-            return JsonResponse({'success': False, 'error': str(e), 'trace': traceback.format_exc()}, status=400)
+        except Exception:
+            logger.exception('Не удалось создать задачу')
+            return JsonResponse({'success': False, 'error': 'Не удалось создать задачу'}, status=500)
 
     return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
 
@@ -547,11 +601,23 @@ def api_workspace_create(request):
 
         try:
             data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Некорректные данные'}, status=400)
 
+        if not isinstance(data, dict):
+            return JsonResponse({'success': False, 'error': 'Некорректные данные'}, status=400)
+
+        name = str(data.get('name', '')).strip()
+        if not name:
+            return JsonResponse({'success': False, 'error': 'Введите название рабочего пространства'}, status=400)
+        if len(name) > 120:
+            return JsonResponse({'success': False, 'error': 'Название рабочего пространства слишком длинное'}, status=400)
+
+        try:
             user = request.user
 
             workspace = Workspace.objects.create(
-                name=data.get('name'),
+                name=name,
                 description=data.get('description', ''),
                 is_personal=data.get('is_personal', False),
                 owner=user
@@ -565,9 +631,9 @@ def api_workspace_create(request):
                     'is_personal': workspace.is_personal
                 }
             })
-        except Exception as e:
-            import traceback
-            return JsonResponse({'success': False, 'error': str(e), 'trace': traceback.format_exc()}, status=400)
+        except Exception:
+            logger.exception('Не удалось создать рабочее пространство')
+            return JsonResponse({'success': False, 'error': 'Не удалось создать рабочее пространство'}, status=500)
 
     return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
 
@@ -691,3 +757,50 @@ def api_notifications_read_all(request):
         return JsonResponse({'success': True})
 
     return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+
+def api_task_move(request, task_id):
+    if request.method != "POST":
+        return JsonResponse(
+            {"success": False, "error": "Method not allowed"},
+            status=405,
+        )
+
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            {"success": False, "error": "Требуется авторизация"},
+            status=401,
+        )
+
+    try:
+        data = json.loads(request.body)
+        column_id = data.get("column_id")
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"success": False, "error": "Некорректный JSON"},
+            status=400,
+        )
+
+    task = get_object_or_404(
+        Task,
+        id=task_id,
+        column__board__workspace__owner=request.user,
+    )
+
+    new_column = get_object_or_404(
+        Column,
+        id=column_id,
+        board__workspace__owner=request.user,
+    )
+
+    task.column = new_column
+    task.order = Task.objects.filter(column=new_column).exclude(id=task.id).count()
+    task.save()
+
+    return JsonResponse({
+        "success": True,
+        "task": {
+            "id": task.id,
+            "column_id": new_column.id,
+            "order": task.order,
+        },
+    })
