@@ -1,0 +1,46 @@
+name: Django tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: teamflow_db
+          POSTGRES_USER: teamflow_user
+          POSTGRES_PASSWORD: teamflow_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U teamflow_user -d teamflow_db"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      SECRET_KEY: test-secret-key
+      DEBUG: "True"
+      DB_NAME: teamflow_db
+      DB_USER: teamflow_user
+      DB_PASSWORD: teamflow_password
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - run: python -m pip install --upgrade pip
+
+      - run: pip install -r requirements.txt
+
+      - run: python tm/manage.py test flow
