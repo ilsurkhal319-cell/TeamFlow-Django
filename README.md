@@ -99,6 +99,3 @@ TeamFlow/
 └── requirements.txt
 ```
 
-## Notes
-
-`.env` contains local secrets and is intentionally excluded from Git. Before a real production deployment, configure production values for `DEBUG`, `ALLOWED_HOSTS`, secret management, static files and the WSGI/ASGI server.
