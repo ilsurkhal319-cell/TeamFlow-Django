@@ -1,127 +1,104 @@
 # TeamFlow
 
-TeamFlow is a Django web application for managing tasks, boards, and workspaces.
-The project is inspired by tools like Trello and was built as a practice project for learning backend development with Django.
+TeamFlow is a Trello-style task management application for teams. Users can create workspaces, boards, columns and tasks, then track work through a simple visual interface.
+
+The project is a learning pet project focused on Django backend development and production-like local tooling.
+
+## Stack
+
+- Python 3.13
+- Django 5 and Django REST Framework
+- PostgreSQL 17
+- Docker and Docker Compose
+- HTML, Tailwind CSS and JavaScript
+- Django TestCase and GitHub Actions
 
 ## Features
 
-- User registration and login
-- Custom user model
-- Workspaces
-- Boards
-- Columns
-- Tasks
-- Task priorities
-- Labels
-- Comments
-- Notifications
-- Favorite boards
-- Archived boards
-- JSON API endpoints
+- User registration, login and editable profiles
+- Workspaces, boards, columns and tasks
+- Task priorities, due dates, labels, comments and notifications
+- Favorites and archived boards
+- Drag-and-drop task movement between columns
+- Search tasks on a board
+- JSON and DRF API endpoints with authentication and object-level access checks
+- Recent activity panel on the dashboard
 
-## Tech Stack
+## Quick Start With Docker
 
-- Python
-- Django
-- PostgreSQL
-- HTML
-- CSS
-- JavaScript
+1. Copy the environment template:
+
+   ```powershell
+   Copy-Item .env.example .env
+   ```
+
+2. Start the application and PostgreSQL:
+
+   ```powershell
+   docker compose up --build
+   ```
+
+3. Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/).
+
+Migrations run automatically when the `web` container starts. To create an administrator:
+
+```powershell
+docker compose exec web python manage.py createsuperuser
+```
+
+To stop the containers while preserving the database volume:
+
+```powershell
+docker compose down
+```
+
+## Local Development
+
+Create and activate a virtual environment, install dependencies and create `.env` from `.env.example`.
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+cd tm
+python manage.py migrate
+python manage.py runserver
+```
+
+For local execution set `DB_HOST=127.0.0.1` in `.env`. Docker Compose overrides it with `db` inside the `web` container.
+
+## Tests
+
+Run the test suite locally:
+
+```powershell
+cd tm
+python manage.py test flow
+```
+
+Or run it inside the application container:
+
+```powershell
+docker compose exec web python manage.py test flow
+```
+
+GitHub Actions runs the Django test suite against PostgreSQL for each push and pull request.
 
 ## Project Structure
 
 ```text
 TeamFlow/
 ├── tm/
-│   ├── flow/
-│   ├── users/
-│   ├── tm/
-│   ├── static/
-│   ├── templates/
+│   ├── flow/          # workspaces, boards, tasks and API
+│   ├── users/         # custom user model and authentication
+│   ├── static/        # JavaScript and styles
 │   └── manage.py
-├── requirements.txt
-├── .gitignore
-└── README.md
+├── Dockerfile
+├── compose.yaml
+├── .env.example
+└── requirements.txt
 ```
 
-## Installation
+## Notes
 
-Create and activate a virtual environment:
-
-```bash
-python -m venv .venv
-```
-
-Windows:
-
-```bash
-.venv\Scripts\activate
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Go to the Django project folder:
-
-```bash
-cd tm
-```
-
-Run migrations:
-
-```bash
-python manage.py migrate
-```
-
-Start the development server:
-
-```bash
-python manage.py runserver
-```
-
-Open in browser:
-
-```text
-http://127.0.0.1:8000/
-```
-
-## Apps
-
-### users
-
-Handles authentication and user-related logic:
-
-- registration
-- login
-- custom user model
-- user profile data
-
-### flow
-
-Contains the main application logic:
-
-- workspaces
-- boards
-- columns
-- tasks
-- labels
-- comments
-- notifications
-- API endpoints
-
-## Current Status
-
-The project is in development.
-The main functionality is implemented, but the project still needs improvements before production use.
-
-## Planned Improvements
-
-- Move secret settings to environment variables
-- Add tests
-- Improve API security
-- Remove unnecessary `csrf_exempt`
-- Add Docker support
-- Prepare the project for deployment
+`.env` contains local secrets and is intentionally excluded from Git. Before a real production deployment, configure production values for `DEBUG`, `ALLOWED_HOSTS`, secret management, static files and the WSGI/ASGI server.
