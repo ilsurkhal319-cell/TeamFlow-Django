@@ -23,7 +23,7 @@
             <p class="text-sm text-zinc-400">Начни новый проект</p>
         </div>
     </button>
-    <button onclick="#" class="bg-zinc-900 hover:bg-zinc-800 rounded-2xl p-5 flex items-center gap-4 transition-all hover:shadow-xl group">
+    <div class="bg-zinc-900 rounded-2xl p-5 flex items-center gap-4 opacity-60 cursor-not-allowed" title="Скоро появится">
         <div class="w-12 h-12 bg-blue-600/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
             <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
@@ -31,10 +31,10 @@
         </div>
         <div class="text-left">
             <h3 class="font-semibold text-zinc-100">Присоединиться к доске</h3>
-            <p class="text-sm text-zinc-400">По invite-коду</p>
+            <p class="text-sm text-zinc-400">Скоро появится</p>
         </div>
-    </button>
-    <button class="bg-zinc-900 hover:bg-zinc-800 rounded-2xl p-5 flex items-center gap-4 transition-all hover:shadow-xl group">
+    </div>
+    <button onclick="openRecentActivityModal()" class="bg-zinc-900 hover:bg-zinc-800 rounded-2xl p-5 flex items-center gap-4 transition-all hover:shadow-xl group">
         <div class="w-12 h-12 bg-emerald-600/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
             <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -45,6 +45,17 @@
             <p class="text-sm text-zinc-400">Что изменилось недавно</p>
         </div>
     </button>
+</div>
+
+<div id="recentActivityModal" class="fixed inset-0 z-[100] hidden" role="dialog" aria-modal="true" aria-labelledby="recentActivityTitle">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeRecentActivityModal()"></div>
+    <div class="absolute top-1/2 left-1/2 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
+            <h2 id="recentActivityTitle" class="text-xl font-semibold">Последние изменения</h2>
+            <button onclick="closeRecentActivityModal()" class="p-2 text-zinc-400 transition-colors hover:text-zinc-100" title="Закрыть" aria-label="Закрыть">&#215;</button>
+        </div>
+        <div id="recentActivityList" class="max-h-[60vh] overflow-y-auto p-3"></div>
+    </div>
 </div>
 
 <!-- Пустой список (показывается когда нет досок) -->
@@ -320,4 +331,8 @@
 </div>
 
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/dashboard.js' %}"></script>
 {% endblock %}

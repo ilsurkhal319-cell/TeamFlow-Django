@@ -29,12 +29,6 @@ function closeEditModal() {
     document.body.style.overflow = '';
 }
 
-// Сохранить профиль
-function saveProfile() {
-    // Здесь можно добавить логику сохранения
-    closeEditModal();
-}
-
 // Закрытие по Escape
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
@@ -45,19 +39,13 @@ document.addEventListener('keydown', function(e) {
 // Закрытие при клике вне модалки
 document.addEventListener('click', function(e) {
     var modal = document.getElementById('editProfileModal');
+    if (!modal) {
+        return;
+    }
+
     var modalContent = modal.querySelector('.modal-content');
 
     if (!modal.classList.contains('hidden') && !modalContent.contains(e.target)) {
         closeEditModal();
     }
-});
-
-// Выбор темы в модалке
-document.querySelectorAll('#editProfileModal .theme-option').forEach(option => {
-    option.addEventListener('click', function() {
-        document.querySelectorAll('#editProfileModal .theme-option').forEach(opt => {
-            opt.classList.remove('selected');
-        });
-        this.classList.add('selected');
-    });
 });

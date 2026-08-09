@@ -8,6 +8,13 @@
 {% endblock %}
 
 {% block content %}
+{% if messages %}
+<div class="mb-4 space-y-2">
+    {% for message in messages %}
+    <p class="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">{{ message }}</p>
+    {% endfor %}
+</div>
+{% endif %}
 <!-- Цветовая полоса -->
 <div class="profile-header-stripe rounded-t-3xl"></div>
 
@@ -18,7 +25,11 @@
             <!-- Аватар -->
             <div class="flex flex-col items-center">
                 <div class="avatar-container relative mb-4 group">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=You" class="w-40 h-40 rounded-full border-4 border-zinc-800 object-cover">
+                    {% if request.user.avatar %}
+                    <img src="{{ request.user.avatar.url }}" class="w-40 h-40 rounded-full border-4 border-zinc-800 object-cover">
+                    {% else %}
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ request.user.username }}" class="w-40 h-40 rounded-full border-4 border-zinc-800 object-cover">
+                    {% endif %}
                     <div class="avatar-ring absolute inset-0 rounded-full border-4 border-violet-500/50"></div>
                     <button onclick="openEditModal()" class="change-photo-btn absolute bottom-0 right-0 w-10 h-10 bg-violet-600 hover:bg-violet-700 rounded-full flex items-center justify-center shadow-lg transition-colors">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -29,8 +40,8 @@
                 </div>
 
                 <!-- Имя и юзернейм -->
-                <h1 class="text-2xl font-bold text-zinc-100">Ильсур Галиев</h1>
-                <p class="text-zinc-400">@ilsur</p>
+                <h1 class="text-2xl font-bold text-zinc-100">{{ request.user.display_name|default:request.user.username }}</h1>
+                <p class="text-zinc-400">@{{ request.user.username }}</p>
 
                 <!-- Статус онлайн -->
                 <div class="flex items-center gap-1.5 mt-2 text-emerald-400">
@@ -40,7 +51,7 @@
 
                 <!-- Био -->
                 <p class="text-zinc-400 text-center mt-4 text-sm leading-relaxed">
-                    Full-stack разработчик. Люблю создавать удобные интерфейсы и решать сложные задачи.
+                    {{ request.user.bio|default:"Расскажите немного о себе в профиле." }}
                 </p>
 
                 <!-- Кнопка редактирования -->
@@ -56,21 +67,21 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                     </svg>
                     <span class="text-zinc-400">Участник с:</span>
-                    <span class="text-zinc-200">12 марта 2025</span>
+                    <span class="text-zinc-200">{{ request.user.date_joined|date:"d.m.Y" }}</span>
                 </div>
                 <div class="flex items-center gap-3 text-sm">
                     <svg class="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
                     </svg>
                     <span class="text-zinc-400">Создано досок:</span>
-                    <span class="text-zinc-200 font-semibold">14</span>
+                    <span class="text-zinc-200 font-semibold">{{ board_count }}</span>
                 </div>
                 <div class="flex items-center gap-3 text-sm">
                     <svg class="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                     <span class="text-zinc-400">Завершено задач:</span>
-                    <span class="text-zinc-200 font-semibold">203</span>
+                    <span class="text-zinc-200 font-semibold">{{ completed_task_count }}</span>
                 </div>
                 <div class="flex items-center gap-3 text-sm">
                     <svg class="w-5 h-5 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
@@ -122,15 +133,15 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <p class="text-xs text-zinc-500 mb-1">Роль</p>
-                                <p class="text-zinc-200">Full-stack разработчик</p>
+                                <p class="text-zinc-200">{{ request.user.display_name|default:request.user.username }}</p>
                             </div>
                             <div>
                                 <p class="text-xs text-zinc-500 mb-1">Email</p>
-                                <p class="text-zinc-200">ilsur@example.com</p>
+                                <p class="text-zinc-200">{{ request.user.email }}</p>
                             </div>
                             <div>
                                 <p class="text-xs text-zinc-500 mb-1">Телефон</p>
-                                <p class="text-zinc-200">+7 (999) 123-45-67</p>
+                                <p class="text-zinc-200">{{ request.user.phone|default:"Не указан" }}</p>
                             </div>
                         </div>
                     </div>
@@ -398,19 +409,19 @@
                         <div class="bg-zinc-950 rounded-2xl border border-zinc-800 p-6 space-y-4">
                             <div>
                                 <label class="block text-sm text-zinc-400 mb-2">Display Name</label>
-                                <input type="text" value="Ильсур Галиев" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:border-violet-600">
+                                <input type="text" value="{{ request.user.display_name|default:request.user.username }}" readonly class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-400 cursor-default">
                             </div>
                             <div>
                                 <label class="block text-sm text-zinc-400 mb-2">Bio</label>
-                                <textarea rows="3" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:border-violet-600 resize-none">Full-stack разработчик. Люблю создавать удобные интерфейсы и решать сложные задачи.</textarea>
+                                <textarea rows="3" readonly class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-400 cursor-default resize-none">{{ request.user.bio|default:"Не указано" }}</textarea>
                             </div>
                             <div>
                                 <label class="block text-sm text-zinc-400 mb-2">Телефон</label>
-                                <input type="tel" value="+7 (999) 123-45-67" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:border-violet-600">
+                                <input type="tel" value="{{ request.user.phone|default:'' }}" readonly class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-400 cursor-default">
                             </div>
                             <div>
                                 <label class="block text-sm text-zinc-400 mb-2">Email</label>
-                                <input type="email" value="ilsur@example.com" readonly class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-500 cursor-not-allowed">
+                                <input type="email" value="{{ request.user.email }}" readonly class="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-500 cursor-not-allowed">
                             </div>
                         </div>
                     </div>
@@ -418,23 +429,23 @@
                     <div>
                         <h3 class="text-lg font-semibold text-zinc-100 mb-4">Тема интерфейса</h3>
                         <div class="flex gap-4">
-                            <button class="theme-option selected flex-1 p-4 bg-zinc-950 rounded-2xl border border-zinc-800 text-center">
+                            <button type="button" disabled class="theme-option selected flex-1 p-4 bg-zinc-950 rounded-2xl border border-zinc-800 text-center cursor-default">
                                 <div class="w-8 h-8 bg-zinc-800 rounded-full mx-auto mb-2"></div>
                                 <p class="text-sm text-zinc-300">Тёмная</p>
                             </button>
-                            <button class="theme-option flex-1 p-4 bg-zinc-950 rounded-2xl border border-zinc-800 text-center opacity-50 cursor-not-allowed">
+                            <button type="button" disabled class="theme-option flex-1 p-4 bg-zinc-950 rounded-2xl border border-zinc-800 text-center opacity-50 cursor-not-allowed">
                                 <div class="w-8 h-8 bg-zinc-200 rounded-full mx-auto mb-2"></div>
                                 <p class="text-sm text-zinc-500">Светлая (скоро)</p>
                             </button>
-                            <button class="theme-option flex-1 p-4 bg-zinc-950 rounded-2xl border border-zinc-800 text-center opacity-50 cursor-not-allowed">
+                            <button type="button" disabled class="theme-option flex-1 p-4 bg-zinc-950 rounded-2xl border border-zinc-800 text-center opacity-50 cursor-not-allowed">
                                 <div class="w-8 h-8 bg-gradient-to-r from-zinc-800 to-zinc-200 rounded-full mx-auto mb-2"></div>
                                 <p class="text-sm text-zinc-500">Системная (скоро)</p>
                             </button>
                         </div>
                     </div>
 
-                    <button class="w-full py-3 px-4 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-violet-600/25">
-                        Сохранить изменения
+                    <button type="button" onclick="openEditModal()" class="w-full py-3 px-4 bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-violet-600/25">
+                        Редактировать профиль
                     </button>
                 </div>
             </div>
@@ -459,44 +470,57 @@
             </button>
         </div>
 
-        <!-- Форма -->
-        <div class="p-6 space-y-5">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <!-- Форма -->
+            <div class="p-6 space-y-5">
+            {% if profile_form.errors %}
+                <p class="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">Проверьте заполнение полей.</p>
+            {% endif %}
             <!-- Аватар -->
             <div class="flex items-center gap-5">
                 <div class="relative">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=You" class="w-20 h-20 rounded-full border-4 border-zinc-800">
-                    <button class="absolute bottom-0 right-0 w-8 h-8 bg-violet-600 hover:bg-violet-700 rounded-full flex items-center justify-center transition-colors">
+                    {% if request.user.avatar %}
+                    <img src="{{ request.user.avatar.url }}" class="w-20 h-20 rounded-full border-4 border-zinc-800 object-cover">
+                    {% else %}
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ request.user.username }}" class="w-20 h-20 rounded-full border-4 border-zinc-800">
+                    {% endif %}
+                    <label for="id_avatar" class="absolute bottom-0 right-0 w-8 h-8 bg-violet-600 hover:bg-violet-700 rounded-full flex items-center justify-center transition-colors cursor-pointer">
                         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
                         </svg>
-                    </button>
+                    </label>
                 </div>
                 <div>
                     <p class="text-zinc-200 font-medium">Фото профиля</p>
-                    <p class="text-zinc-500 text-sm">JPG, PNG или GIF. Макс 2MB</p>
+                    <p class="text-zinc-500 text-sm">JPG, PNG или GIF.</p>
                 </div>
             </div>
+            <input id="id_avatar" name="avatar" type="file" accept="image/png,image/jpeg,image/gif" class="hidden">
 
             <!-- Поля -->
             <div>
                 <label class="block text-sm font-medium text-zinc-300 mb-2">Display Name</label>
-                <input type="text" value="Ильсур Галиев" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 transition-colors">
+                <input id="id_display_name" name="display_name" type="text" value="{{ profile_form.display_name.value|default_if_none:'' }}" maxlength="100" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 transition-colors">
+                {% for error in profile_form.display_name.errors %}<p class="mt-1 text-sm text-red-300">{{ error }}</p>{% endfor %}
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-zinc-300 mb-2">Bio</label>
-                <textarea rows="3" placeholder="Расскажите о себе..." class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 transition-colors resize-none">Full-stack разработчик. Люблю создавать удобные интерфейсы и решать сложные задачи.</textarea>
+                <textarea id="id_bio" name="bio" rows="3" maxlength="500" placeholder="Расскажите о себе..." class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 transition-colors resize-none">{{ profile_form.bio.value|default_if_none:"" }}</textarea>
+                {% for error in profile_form.bio.errors %}<p class="mt-1 text-sm text-red-300">{{ error }}</p>{% endfor %}
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-zinc-300 mb-2">Телефон</label>
-                <input type="tel" value="+7 (999) 123-45-67" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 transition-colors">
+                <input id="id_phone" name="phone" type="tel" value="{{ profile_form.phone.value|default_if_none:'' }}" maxlength="20" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 transition-colors">
+                {% for error in profile_form.phone.errors %}<p class="mt-1 text-sm text-red-300">{{ error }}</p>{% endfor %}
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-zinc-300 mb-2">Email</label>
-                <input type="email" value="ilsur@example.com" readonly class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-500 cursor-not-allowed">
+                <input type="email" value="{{ request.user.email }}" readonly class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-500 cursor-not-allowed">
             </div>
 
             <!-- Выбор темы -->
@@ -517,23 +541,26 @@
                     </button>
                 </div>
             </div>
-        </div>
+            </div>
 
-        <!-- Кнопки -->
-        <div class="px-6 py-4 border-t border-zinc-800 flex gap-3">
-            <button onclick="closeEditModal()" class="flex-1 py-3 px-4 rounded-xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 font-medium transition-colors">
+            <!-- Кнопки -->
+            <div class="px-6 py-4 border-t border-zinc-800 flex gap-3">
+            <button type="button" onclick="closeEditModal()" class="flex-1 py-3 px-4 rounded-xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 font-medium transition-colors">
                 Отмена
             </button>
-            <button onclick="saveProfile()" class="flex-1 py-3 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold transition-colors">
+            <button type="submit" class="flex-1 py-3 px-4 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold transition-colors">
                 Сохранить
             </button>
+            </div>
+        </form>
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-
-<script src="{% static 'js/base.js' %}"></script>
-
+<script src="{% static 'js/profile.js' %}"></script>
+{% if profile_form.errors %}
+<script>openEditModal();</script>
+{% endif %}
 {% endblock %}

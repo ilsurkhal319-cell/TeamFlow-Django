@@ -6,6 +6,16 @@
 const taskCards = document.querySelectorAll('.task-card');
 const dropZones = document.querySelectorAll('.drop-zone');
 
+const taskSearch = document.getElementById('taskSearch');
+if (taskSearch) {
+    taskSearch.addEventListener('input', function() {
+        const query = this.value.trim().toLowerCase();
+        document.querySelectorAll('.task-card').forEach(card => {
+            card.classList.toggle('hidden', !card.textContent.toLowerCase().includes(query));
+        });
+    });
+}
+
 // Переменная для хранения перетаскиваемой карточки
 let draggedCard = null;
 
@@ -103,6 +113,23 @@ function handleDrop(e) {
         let dropZone = e.target.closest('.drop-zone');
 
         if (dropZone) {
+            const previousDropZone = draggedCard.parentElement;
+            const previousNextSibling = draggedCard.nextElementSibling;
+
+            function restoreCardPosition() {
+                if (previousNextSibling) {
+                    previousDropZone.insertBefore(draggedCard, previousNextSibling);
+                } else {
+                    const addButton = previousDropZone.querySelector('button');
+                    previousDropZone.insertBefore(draggedCard, addButton);
+                }
+
+                updateColumnCounter(previousDropZone);
+                updateColumnCounter(dropZone);
+                checkAndShowEmptyState(previousDropZone);
+                checkAndShowEmptyState(dropZone);
+            }
+
             // Получаем все карточки в этой зоне
             const existingCards = dropZone.querySelectorAll('.task-card');
 
@@ -138,10 +165,28 @@ function handleDrop(e) {
             // Проверяем empty state
             checkAndShowEmptyState(dropZone);
 
-            // Логируем перемещение
-            const columnName = dropZone.previousElementSibling.querySelector('h2').textContent;
             const taskId = draggedCard.dataset.taskId;
-            console.log(`Задача ${taskId} перемещена в колонку: ${columnName}`);
+            const columnId = dropZone.dataset.columnId;
+
+            fetch(`/api/task/${taskId}/move/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ column_id: columnId })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        restoreCardPosition();
+                        alert(data.error || 'Не удалось переместить задачу');
+                    }
+                })
+                .catch(() => {
+                    restoreCardPosition();
+                    alert('Ошибка сети при перемещении задачи');
+                });
         }
     }
 }
@@ -230,8 +275,6 @@ function createTask() {
 
     // Получаем ID колонки из data-атрибута
     const columnId = currentDropZone.dataset.columnId;
-    console.log('Creating task:', { title: title, description: description, priority: selectedPriority, column_id: columnId });
-
     // Отправка данных на сервер
     fetch('/api/task/create/', {
         method: 'POST',
@@ -246,12 +289,8 @@ function createTask() {
             column_id: columnId
         })
     })
-    .then(function(response) {
-        console.log('Response status:', response.status);
-        return response.json();
-    })
+    .then(function(response) { return response.json(); })
     .then(function(data) {
-        console.log('Response data:', data);
         if (data.success) {
             // Создаём карточку с ID с сервера
             const newTask = createTaskCard(title, description, selectedPriority, data.task.id);
@@ -272,7 +311,6 @@ function createTask() {
             // Закрываем модалку
             closeTaskModal();
 
-            console.log(`Создана новая задача: ${title} (${selectedPriority})`);
         } else {
             alert('Ошибка: ' + (data.error || 'Не удалось создать задачу'));
         }
@@ -315,7 +353,7 @@ function getCookie(name) {
  */
 function createTaskCard(title, description, priority, taskId) {
     const card = document.createElement('div');
-    card.className = 'bg-zinc-900 rounded-3xl p-5 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer hover:-translate-y-1 task-card';
+    card.className = 'bg-zinc-900 rounded-3xl p-5 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-grab hover:-translate-y-1 task-card';
     card.setAttribute('draggable', 'true');
     card.dataset.taskId = taskId || ++taskIdCounter;
 

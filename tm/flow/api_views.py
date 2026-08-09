@@ -1,8 +1,10 @@
 from rest_framework import generics
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .models import Task
+from .models import Board, Task
 from .serializers import TaskSerializer
 
 
@@ -49,3 +51,44 @@ class TaskDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             )
 
         serializer.save()
+
+
+class RecentActivityAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        recent_tasks = (
+            Task.objects
+            .filter(column__board__workspace__owner=request.user)
+            .select_related("column__board")
+            .order_by("-updated_at")[:10]
+        )
+        recent_boards = (
+            Board.objects
+            .filter(workspace__owner=request.user)
+            .order_by("-updated_at")[:10]
+        )
+
+        activity = [
+            {
+                "type": "task",
+                "title": task.title,
+                "detail": f"Доска: {task.column.board.title}",
+                "updated_at": task.updated_at.isoformat(),
+                "link": f"/board/{task.column.board_id}/",
+            }
+            for task in recent_tasks
+        ]
+        activity.extend(
+            {
+                "type": "board",
+                "title": board.title,
+                "detail": "Доска обновлена",
+                "updated_at": board.updated_at.isoformat(),
+                "link": f"/board/{board.id}/",
+            }
+            for board in recent_boards
+        )
+        activity.sort(key=lambda item: item["updated_at"], reverse=True)
+
+        return Response({"results": activity[:10]})

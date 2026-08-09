@@ -5,7 +5,7 @@ from flow.views import (
     api_boards_list, api_user_search,
     api_notifications_list, api_notifications_read, api_notifications_read_all, api_task_move
 )
-from .api_views import TaskDetailAPIView, TaskListCreateAPIView
+from .api_views import RecentActivityAPIView, TaskDetailAPIView, TaskListCreateAPIView
 
 app_name = 'flow'
 
@@ -29,6 +29,7 @@ urlpatterns = [
     path('api/workspace/create/', api_workspace_create, name='api_workspace_create'),
     path("api/drf/tasks/", TaskListCreateAPIView.as_view(), name='drf_tasks'),
     path("api/drf/tasks/<int:pk>/",TaskDetailAPIView.as_view(),name="drf_task_detail",),
+    path("api/drf/activity/", RecentActivityAPIView.as_view(), name="drf_recent_activity"),
 
     # Notifications API
     path('api/notifications/', api_notifications_list, name='api_notifications_list'),

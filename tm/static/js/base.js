@@ -71,12 +71,9 @@ function updateBoardColorButtons() {
 
 // Создать доску
 function createBoard() {
-    console.log('=== createBoard called ===');
     var title = document.getElementById('boardTitle').value.trim();
-    console.log('Title:', title);
 
     if (!title) {
-        console.log('No title, returning');
         // Показываем ошибку с анимацией
         var input = document.getElementById('boardTitle');
         var error = document.getElementById('boardTitleError');
@@ -96,15 +93,10 @@ function createBoard() {
 
     var description = document.getElementById('boardDescription').value.trim();
     var workspace = document.getElementById('boardWorkspace').value;
-    console.log('Description:', description);
-    console.log('Workspace:', workspace);
-    console.log('Color:', selectedBoardColor);
 
     // Отправка данных на сервер
     var csrfToken = getCookie('csrftoken') || '';
-    console.log('CSRF Token:', csrfToken);
 
-    console.log('Sending fetch request to /api/board/create/');
     fetch('/api/board/create/', {
         method: 'POST',
         headers: {
@@ -118,12 +110,8 @@ function createBoard() {
             workspace: workspace
         })
     })
-    .then(function(response) {
-        console.log('Got response, status:', response.status);
-        return response.json();
-    })
+    .then(function(response) { return response.json(); })
     .then(function(data) {
-        console.log('Response data:', data);
         if (data.success) {
             closeBoardModal();
             showNotification('Доска "' + title + '" создана');
@@ -139,8 +127,6 @@ function createBoard() {
         console.error('Fetch error:', error);
         showNotification('Ошибка при создании доски', true);
     });
-
-    console.log('=== createBoard finished ===');
 }
 
 // Получить CSRF токен

@@ -18,20 +18,13 @@
             </svg>
             <span class="text-sm">Все доски</span>
         </a>
-        <div class="flex items-center gap-2">
-            <h1 class="text-xl font-semibold">{{ board.title|default:"Доска" }}</h1>
-            <button class="text-zinc-400 hover:text-zinc-100 transition-colors p-1">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                </svg>
-            </button>
-        </div>
+        <h1 class="text-xl font-semibold">{{ board.title|default:"Доска" }}</h1>
     </div>
 
     <!-- По центру -->
     <div class="flex-1 max-w-xs mx-8">
         <div class="relative">
-            <input type="text" placeholder="Поиск по задачам..." class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-600 transition-colors">
+            <input id="taskSearch" type="search" placeholder="Поиск по задачам..." class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-600 transition-colors">
             <svg class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
@@ -40,29 +33,19 @@
 
     <!-- Справа -->
     <div class="flex items-center gap-4">
-        <div class="flex -space-x-2">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" class="w-8 h-8 rounded-full border-2 border-zinc-950" title="Alex">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Maria" class="w-8 h-8 rounded-full border-2 border-zinc-950" title="Maria">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=John" class="w-8 h-8 rounded-full border-2 border-zinc-950" title="John">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Anna" class="w-8 h-8 rounded-full border-2 border-zinc-950" title="Anna">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Peter" class="w-8 h-8 rounded-full border-2 border-zinc-950" title="Peter">
-            <div class="w-8 h-8 rounded-full border-2 border-zinc-950 bg-zinc-800 flex items-center justify-center text-xs text-zinc-400">+3</div>
-        </div>
-        <!-- Кнопка Invite -->
-        <button onclick="openInviteModal()" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+        <button type="button" disabled title="Командные приглашения пока не подключены" class="bg-zinc-800 text-zinc-500 px-4 py-2 rounded-lg text-sm font-medium cursor-not-allowed flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
             </svg>
-            Invite
+            Команда
         </button>
-        <button class="text-zinc-400 hover:text-zinc-100 p-2 transition-colors">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-            </svg>
-        </button>
-        <a href="{% url 'users:login' %}" class="flex items-center gap-2 pl-4 border-l border-zinc-800 hover:bg-zinc-900 px-2 py-1 rounded-lg transition-colors">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=You" class="w-8 h-8 rounded-full">
-            <span class="text-sm text-zinc-300">Ты</span>
+        <a href="{% url 'flow:profile' %}" class="flex items-center gap-2 pl-4 border-l border-zinc-800 hover:bg-zinc-900 px-2 py-1 rounded-lg transition-colors">
+            {% if request.user.avatar %}
+            <img src="{{ request.user.avatar.url }}" class="w-8 h-8 rounded-full object-cover">
+            {% else %}
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ request.user.username }}" class="w-8 h-8 rounded-full">
+            {% endif %}
+            <span class="text-sm text-zinc-300">{{ request.user.display_name|default:request.user.username }}</span>
         </a>
     </div>
 </header>
@@ -89,17 +72,12 @@
                     <h2 class="font-semibold text-zinc-100">{{ column.title }}</h2>
                     <span class="bg-zinc-800 text-zinc-400 text-xs px-2 py-0.5 rounded-full">{{ column.tasks.count }}</span>
                 </div>
-                <button class="text-zinc-400 hover:text-zinc-100 p-1 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                    </svg>
-                </button>
             </div>
         </div>
         <div class="bg-zinc-900/50 flex-1 p-3 space-y-3 rounded-b-3xl drop-zone" data-column-id="{{ column.id }}">
             {% for task in column.tasks.all %}
             <!-- Карточка {{ task.id }} -->
-            <div class="bg-zinc-900 rounded-3xl p-5 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer hover:-translate-y-1 task-card" draggable="true" data-task-id="{{ task.id }}">
+            <div class="bg-zinc-900 rounded-3xl p-5 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-grab hover:-translate-y-1 task-card" draggable="true" data-task-id="{{ task.id }}">
                 <div class="flex items-start justify-between mb-3">
                     <span class="bg-{{ task.get_priority_color }}/10 text-{{ task.get_priority_color }} text-xs px-2 py-1 rounded-2xl font-medium">{{ task.get_priority_display }}</span>
                 </div>

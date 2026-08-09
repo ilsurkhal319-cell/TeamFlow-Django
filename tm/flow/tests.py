@@ -6,6 +6,53 @@ from flow.models import Workspace, Board, Column, Task, Notification
 from flow.services import parse_mentions, create_mention_notifications
 from rest_framework.test import APIClient
 
+
+class ProfileViewTests(TestCase):
+    def test_user_can_update_profile(self):
+        user = CustomUser.objects.create_user(
+            username="profile-user",
+            email="profile@example.com",
+            password="StrongPassword123",
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(
+            reverse("flow:profile"),
+            {
+                "display_name": "Profile Name",
+                "bio": "Backend developer",
+                "phone": "+79990000000",
+            },
+        )
+
+        self.assertRedirects(response, reverse("flow:profile"))
+        user.refresh_from_db()
+        self.assertEqual(user.display_name, "Profile Name")
+        self.assertEqual(user.bio, "Backend developer")
+        self.assertEqual(user.phone, "+79990000000")
+
+
+class LegacyTaskApiTests(TestCase):
+    def test_task_api_rejects_empty_title(self):
+        user = CustomUser.objects.create_user(
+            username="task-api-user",
+            email="task-api@example.com",
+            password="StrongPassword123",
+        )
+        workspace = Workspace.objects.create(name="Workspace", owner=user)
+        board = Board.objects.create(title="Board", workspace=workspace, created_by=user)
+        column = Column.objects.create(board=board, title="To Do")
+        self.client.force_login(user)
+
+        response = self.client.post(
+            reverse("flow:api_task_create"),
+            data=json.dumps({"title": "   ", "column_id": column.id}),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"], "Введите название задачи")
+
 class WorkspaceModelTests(TestCase):
     def test_workspace_can_be_created(self):
         user = CustomUser.objects.create_user(
@@ -479,3 +526,36 @@ class DRFTaskApiTests(TestCase):
 
         self.assertEqual(response.status_code, 204)
         self.assertFalse(Task.objects.filter(id=task.id).exists())
+
+
+class RecentActivityApiTests(TestCase):
+    def test_returns_recent_activity_for_current_user(self):
+        user = CustomUser.objects.create_user(
+            username="activity_user",
+            email="activity_user@example.com",
+            password="StrongPassword123",
+        )
+        workspace = Workspace.objects.create(
+            name="Activity Workspace",
+            owner=user,
+            is_personal=True,
+        )
+        board = Board.objects.create(
+            title="Activity Board",
+            workspace=workspace,
+            created_by=user,
+        )
+        column = Column.objects.create(board=board, title="To Do", order=0)
+        task = Task.objects.create(
+            title="Recent activity task",
+            column=column,
+            created_by=user,
+        )
+        client = APIClient()
+        client.force_authenticate(user=user)
+
+        response = client.get(reverse("flow:drf_recent_activity"))
+
+        self.assertEqual(response.status_code, 200)
+        titles = [item["title"] for item in response.data["results"]]
+        self.assertIn(task.title, titles)
