@@ -1,6 +1,53 @@
 function closeRecentActivityModal() {
     document.getElementById("recentActivityModal").classList.add("hidden");
 }
+
+function openJoinBoardModal() {
+    const modal = document.getElementById("joinBoardModal");
+    const input = document.getElementById("joinBoardCode");
+    const error = document.getElementById("joinBoardError");
+    modal.classList.remove("hidden");
+    input.value = "";
+    error.classList.add("hidden");
+    input.focus();
+}
+
+function closeJoinBoardModal() {
+    document.getElementById("joinBoardModal").classList.add("hidden");
+}
+
+async function joinBoard() {
+    const input = document.getElementById("joinBoardCode");
+    const error = document.getElementById("joinBoardError");
+    const code = input.value.trim().toUpperCase();
+
+    if (!code) {
+        error.textContent = "Введите код доски.";
+        error.classList.remove("hidden");
+        input.focus();
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/board/join/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken") || "",
+            },
+            body: JSON.stringify({code}),
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || "Не удалось присоединиться к доске.");
+        }
+        window.location.href = `/board/${data.board_id}/`;
+    } catch (joinError) {
+        error.textContent = joinError.message;
+        error.classList.remove("hidden");
+    }
+}
+
 async function openRecentActivityModal() {
     const modal = document.getElementById("recentActivityModal");
     const list = document.getElementById("recentActivityList");

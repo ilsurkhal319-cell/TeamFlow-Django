@@ -18,6 +18,7 @@ The project is a learning pet project focused on Django backend development and 
 - User registration, login and editable profiles
 - Workspaces, boards, columns and tasks
 - Board participants with owner-controlled access
+- Joining a board with a one-time shareable code
 - Task priorities, due dates, labels, comments and notifications
 - Favorites and archived boards
 - Drag-and-drop task movement between columns
@@ -87,7 +88,7 @@ GitHub Actions запускает тесты Django на PostgreSQL при ка�
 
 ## Доступ к доскам
 
-Рабочее пространство принадлежит пользователю. Владелец может добавить пользователей на конкретную доску через окно приглашения. Участник видит эту доску и может работать с её задачами, но не может удалять доску или менять её состав.
+Рабочее пространство принадлежит пользователю. Каждая доска получает уникальный код присоединения. Владелец может передать его пользователю, после чего тот вводит код на дашборде и получает доступ к доске. Участник видит доску и может работать с её задачами, но не может удалять доску или менять её состав.
 
 ## Структура проекта
 

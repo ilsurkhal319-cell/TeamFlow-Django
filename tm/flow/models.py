@@ -1,6 +1,13 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+import secrets
+import string
+
+
+def generate_join_code():
+    alphabet = string.ascii_uppercase + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(8))
 
 
 class Workspace(models.Model):
@@ -44,6 +51,8 @@ class Board(models.Model):
         blank=True
     )
 
+    join_code = models.CharField(max_length=8, unique=True, editable=False)
+
     color = models.CharField(max_length=7, default="#8B5CF6")  # hex цвет
     is_favorite = models.BooleanField(default=False)
     is_archived = models.BooleanField(default=False)
@@ -61,6 +70,15 @@ class Board(models.Model):
         verbose_name = "Доска"
         verbose_name_plural = "Доски"
         ordering = ['-updated_at']
+
+    def save(self, *args, **kwargs):
+        if not self.join_code:
+            while True:
+                code = generate_join_code()
+                if not type(self).objects.filter(join_code=code).exists():
+                    self.join_code = code
+                    break
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title

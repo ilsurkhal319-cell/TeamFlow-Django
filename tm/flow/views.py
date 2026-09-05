@@ -480,6 +480,46 @@ def api_board_member_add(request, board_id):
     })
 
 
+@login_required
+def api_board_join(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        if not isinstance(data, dict):
+            raise ValueError
+        code = str(data.get('code', '')).strip().upper()
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return JsonResponse({'success': False, 'error': 'Некорректные данные'}, status=400)
+
+    if not code:
+        return JsonResponse({'success': False, 'error': 'Введите код доски'}, status=400)
+
+    board = get_object_or_404(Board, join_code=code)
+    if board.is_archived:
+        return JsonResponse({'success': False, 'error': 'Эта доска находится в архиве'}, status=400)
+    if board.workspace.owner_id == request.user.id or board.members.filter(id=request.user.id).exists():
+        return JsonResponse({
+            'success': True,
+            'message': 'У вас уже есть доступ к этой доске',
+            'board_id': board.id,
+        })
+
+    board.members.add(request.user)
+    Notification.objects.create(
+        user=board.workspace.owner,
+        type='invite',
+        text=f'{request.user.username} присоединился к доске «{board.title}»',
+        link=f'/board/{board.id}/',
+    )
+    return JsonResponse({
+        'success': True,
+        'message': f'Вы присоединились к доске «{board.title}»',
+        'board_id': board.id,
+    })
+
+
 def api_boards_list(request):
     """API: Получение списка досок для выбранного workspace"""
     if not request.user.is_authenticated:

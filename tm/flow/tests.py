@@ -156,6 +156,7 @@ class BoardModelTests(TestCase):
         self.assertEqual(board.workspace, workspace)
         self.assertEqual(board.created_by, user)
         self.assertFalse(board.is_archived)
+        self.assertEqual(len(board.join_code), 8)
 
 class TaskModelTests(TestCase):
     def test_task_can_be_created(self):
@@ -278,6 +279,31 @@ class BoardAccessTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(board.members.filter(id=member.id).exists())
         self.assertTrue(Notification.objects.filter(user=member, type="invite").exists())
+
+    def test_user_can_join_board_by_code(self):
+        owner = CustomUser.objects.create_user(
+            username="code_owner",
+            email="code_owner@example.com",
+            password="StrongPassword123",
+        )
+        member = CustomUser.objects.create_user(
+            username="code_member",
+            email="code_member@example.com",
+            password="StrongPassword123",
+        )
+        workspace = Workspace.objects.create(name="Code Workspace", owner=owner)
+        board = Board.objects.create(title="Code Board", workspace=workspace, created_by=owner)
+
+        self.client.force_login(member)
+        response = self.client.post(
+            reverse("flow:api_board_join"),
+            data=json.dumps({"code": board.join_code.lower()}),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(board.members.filter(id=member.id).exists())
+        self.assertTrue(Notification.objects.filter(user=owner, type="invite").exists())
 
 class TaskApiTests(TestCase):
     def test_authenticated_user_can_create_task(self):
