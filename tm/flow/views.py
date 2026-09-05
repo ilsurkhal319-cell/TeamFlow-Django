@@ -3,7 +3,7 @@ import logging
 from django.http import JsonResponse
 from django.shortcuts import render, HttpResponseRedirect, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.contrib import messages
 from .models import Workspace, Board, Task, Column, Label, Notification
 from .forms import WorkspaceForm, BoardForm, TaskForm, CommentForm, LabelForm
@@ -11,6 +11,7 @@ from .services import create_mention_notifications
 from users.forms import UserProfileForm
 import re
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 # ============================================================
 # HELPER FUNCTIONS
@@ -19,9 +20,38 @@ from django.contrib.auth import get_user_model
 def get_sidebar_boards(user):
     """Получить последние доски для сайдбара (одинаковые на всех страницах)"""
     return Board.objects.filter(
-        workspace__owner=user,
-        is_archived=False
-    ).order_by('-updated_at')[:5]
+        Q(workspace__owner=user) | Q(members=user),
+        is_archived=False,
+    ).distinct().order_by('-updated_at')[:5]
+
+
+def get_user_boards(user, **filters):
+    """Доски, доступные владельцу или участнику."""
+    return Board.objects.filter(
+        Q(workspace__owner=user) | Q(members=user),
+        **filters,
+    ).distinct()
+
+
+def get_main_workspace(user):
+    return Workspace.objects.get_or_create(
+        owner=user,
+        name='Main',
+    )[0]
+
+
+def get_selected_workspace(user, value):
+    if value in (None, '', 'main'):
+        return get_main_workspace(user)
+    if value == 'all':
+        return None
+    try:
+        return Workspace.objects.filter(
+            Q(owner=user) | Q(boards__members=user),
+            id=int(value),
+        ).distinct().get()
+    except (Workspace.DoesNotExist, TypeError, ValueError):
+        return get_main_workspace(user)
 
 
 @login_required
@@ -175,40 +205,23 @@ def task_comment(request, task_id):
     })
 
 def index(request):
-    context = {'title': 'Главная',}
+    preview_board = None
+    if request.user.is_authenticated:
+        preview_board = get_user_boards(
+            request.user,
+            is_archived=False,
+        ).order_by('-updated_at').first()
+    context = {'title': 'Главная', 'preview_board': preview_board}
     return render(request, 'flow/index.html', context)
 
 @login_required
 def home(request):
-    # Получаем параметр workspace из URL
-    workspace_param = request.GET.get('workspace', 'personal')
-
-    # Фильтруем доски по workspace
-    if workspace_param == 'personal':
-        boards = Board.objects.filter(
-            workspace__owner=request.user,
-            workspace__is_personal=True,
-            is_archived=False
-        ).order_by('-updated_at')[:4]
-    elif workspace_param == 'team':
-        boards = Board.objects.filter(
-            workspace__owner=request.user,
-            workspace__is_personal=False,
-            is_archived=False
-        ).order_by('-updated_at')[:4]
-    else:
-        try:
-            workspace_id = int(workspace_param)
-            boards = Board.objects.filter(
-                workspace__owner=request.user,
-                workspace__id=workspace_id,
-                is_archived=False
-            ).order_by('-updated_at')[:4]
-        except ValueError:
-            boards = Board.objects.filter(
-                workspace__owner=request.user,
-                is_archived=False
-            ).order_by('-updated_at')[:4]
+    workspace = get_selected_workspace(request.user, request.GET.get('workspace'))
+    boards = get_user_boards(request.user, is_archived=False)
+    if workspace is not None:
+        boards = boards.filter(workspace=workspace)
+    boards = boards.order_by('-updated_at')[:4]
+    workspace_param = 'all' if workspace is None else str(workspace.id)
 
     context = {
         'title': 'Главная',
@@ -220,7 +233,7 @@ def home(request):
 
 @login_required
 def dashboard(request):
-    workspace_param = request.GET.get('workspace', 'personal')
+    workspace = get_selected_workspace(request.user, request.GET.get('workspace'))
     sort_by = request.GET.get('sort', 'updated')
 
     # Определяем поле для сортировки
@@ -231,33 +244,15 @@ def dashboard(request):
     else:
         order_by = '-updated_at'
 
-    if workspace_param == 'personal':
-        boards = Board.objects.filter(
-            workspace__owner=request.user,
-            workspace__is_personal=True,
-            is_archived=False
-        ).order_by(order_by)
-    elif workspace_param == 'team':
-        boards = Board.objects.filter(
-            workspace__owner=request.user,
-            workspace__is_personal=False,
-            is_archived=False
-        ).order_by(order_by)
-    else:
-        try:
-            workspace_id = int(workspace_param)
-            boards = Board.objects.filter(
-                workspace__owner=request.user,
-                workspace__id=workspace_id,
-                is_archived=False
-            ).order_by(order_by)
-        except ValueError:
-            boards = Board.objects.filter(
-                workspace__owner=request.user,
-                is_archived=False
-            ).order_by(order_by)
+    boards = get_user_boards(request.user, is_archived=False)
+    if workspace is not None:
+        boards = boards.filter(workspace=workspace)
+    boards = boards.order_by(order_by)
 
-    workspaces = Workspace.objects.filter(owner=request.user)[:10]
+    workspaces = Workspace.objects.filter(
+        Q(owner=request.user) | Q(boards__members=request.user)
+    ).distinct().order_by('name')
+    workspace_param = 'all' if workspace is None else str(workspace.id)
     context = {
         'title': 'Доски',
         'boards': boards,
@@ -274,19 +269,15 @@ def board(request, board_id=None):
 
     # Загружаем доску с колонками и задачами (фильтр по пользователю)
     if board_id:
-        board_obj = Board.objects.filter(id=board_id, workspace__owner=user).first()
+        board_obj = get_object_or_404(get_user_boards(user), id=board_id)
     else:
         # Первая доска пользователя
-        board_obj = Board.objects.filter(workspace__owner=user).first()
+        board_obj = get_user_boards(user).first()
 
     # Если доски нет - создаём демо-данные для текущего пользователя
     if not board_obj:
         # Создаём рабочее пространство
-        workspace = Workspace.objects.create(
-            name='Мои задачи',
-            owner=user,
-            is_personal=True
-        )
+        workspace = get_main_workspace(user)
 
         # Создаём доску
         board_obj = Board.objects.create(
@@ -318,8 +309,8 @@ def board(request, board_id=None):
 
 @login_required
 def favorites(request):
-    favorite_boards = Board.objects.filter(
-        workspace__owner=request.user,
+    favorite_boards = get_user_boards(
+        request.user,
         is_favorite=True,
         is_archived=False
     ).order_by('-updated_at')
@@ -346,27 +337,73 @@ def profile(request):
     else:
         profile_form = UserProfileForm(instance=request.user)
 
-    user_boards = Board.objects.filter(
-        workspace__owner=request.user,
-        is_archived=False,
-    )
+    all_user_boards = get_user_boards(
+        request.user,
+    ).select_related('workspace', 'created_by').order_by('-updated_at')
+    user_boards = all_user_boards.filter(is_archived=False)
     user_tasks = Task.objects.filter(
-        column__board__workspace__owner=request.user,
+        Q(assignee=request.user) | Q(created_by=request.user),
+        Q(column__board__workspace__owner=request.user) |
+        Q(column__board__members=request.user),
+    ).select_related('column__board').distinct().order_by('-updated_at')
+    completed_titles = {'done', 'готово', 'завершено', 'completed'}
+    today = timezone.localdate()
+    completed_task_count = 0
+    for task in user_tasks:
+        if task.column.title.casefold() in completed_titles:
+            task.profile_status = 'completed'
+            task.profile_status_label = 'Завершена'
+            completed_task_count += 1
+        elif task.due_date and task.due_date < today:
+            task.profile_status = 'overdue'
+            task.profile_status_label = 'Просрочена'
+        else:
+            task.profile_status = 'active'
+            task.profile_status_label = 'В работе'
+
+    workspaces = Workspace.objects.filter(
+        Q(owner=request.user) | Q(boards__members=request.user)
+    ).distinct().annotate(
+        active_board_count=Count('boards', filter=Q(boards__is_archived=False)),
+    ).order_by('name')
+    recent_activity = [
+        {
+            'kind': 'board',
+            'title': board.title,
+            'date': board.updated_at,
+            'url_id': board.id,
+        }
+        for board in user_boards[:5]
+    ]
+    recent_activity.extend(
+        {
+            'kind': 'task',
+            'title': task.title,
+            'date': task.updated_at,
+            'url_id': task.column.board_id,
+        }
+        for task in user_tasks[:5]
     )
+    recent_activity.sort(key=lambda item: item['date'], reverse=True)
     context = {
         'title': 'Профиль',
         'sidebar_boards': get_sidebar_boards(request.user),
         'profile_form': profile_form,
         'board_count': user_boards.count(),
         'task_count': user_tasks.count(),
-        'completed_task_count': user_tasks.filter(column__title__iexact='Done').count(),
+        'completed_task_count': completed_task_count,
+        'workspaces': workspaces,
+        'profile_boards': all_user_boards[:30],
+        'recent_boards': user_boards[:4],
+        'profile_tasks': user_tasks[:30],
+        'recent_activity': recent_activity[:8],
     }
     return render(request, 'flow/profile.html', context)
 
 @login_required
 def archive(request):
-    archived_boards = Board.objects.filter(
-        workspace__owner=request.user,
+    archived_boards = get_user_boards(
+        request.user,
         is_archived=True
     ).order_by('-updated_at')
     context = {
@@ -411,25 +448,47 @@ def api_user_search(request):
     return JsonResponse({'success': True, 'users': users_data})
 
 
+@login_required
+def api_board_member_add(request, board_id):
+    """Добавить пользователя на доску. Управлять составом может владелец workspace."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+
+    board = get_object_or_404(Board, id=board_id, workspace__owner=request.user)
+    try:
+        data = json.loads(request.body)
+        if not isinstance(data, dict):
+            raise ValueError
+        user_id = int(data.get('user_id'))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return JsonResponse({'success': False, 'error': 'Некорректные данные'}, status=400)
+
+    member = get_object_or_404(User, id=user_id)
+    if member.id == request.user.id:
+        return JsonResponse({'success': False, 'error': 'Владелец уже имеет доступ'}, status=400)
+
+    board.members.add(member)
+    Notification.objects.create(
+        user=member,
+        type='invite',
+        text=f'Вас добавили на доску «{board.title}»',
+        link=f'/board/{board.id}/',
+    )
+    return JsonResponse({
+        'success': True,
+        'message': f'@{member.username} добавлен на доску',
+    })
+
+
 def api_boards_list(request):
     """API: Получение списка досок для выбранного workspace"""
     if not request.user.is_authenticated:
         return JsonResponse({'success': False, 'error': 'Требуется авторизация'}, status=401)
 
-    workspace_param = request.GET.get('workspace', 'personal')
-
-    # Фильтруем по workspace
-    if workspace_param == 'personal':
-        boards = Board.objects.filter(workspace__owner=request.user, workspace__is_personal=True)
-    elif workspace_param == 'team':
-        boards = Board.objects.filter(workspace__owner=request.user, workspace__is_personal=False)
-    else:
-        # Если передан ID workspace
-        try:
-            workspace_id = int(workspace_param)
-            boards = Board.objects.filter(workspace__id=workspace_id, workspace__owner=request.user)
-        except ValueError:
-            boards = Board.objects.filter(workspace__owner=request.user)
+    workspace = get_selected_workspace(request.user, request.GET.get('workspace'))
+    boards = get_user_boards(request.user)
+    if workspace is not None:
+        boards = boards.filter(workspace=workspace)
 
     boards_data = [{
         'id': board.id,
@@ -439,7 +498,6 @@ def api_boards_list(request):
         'is_archived': board.is_archived,
         'task_count': board.get_task_count(),
         'workspace_id': board.workspace.id,
-        'workspace_is_personal': board.workspace.is_personal
     } for board in boards]
 
     return JsonResponse({'success': True, 'boards': boards_data})
@@ -471,34 +529,14 @@ def api_board_create(request):
 
             # Пытаемся найти workspace
             workspace_id = data.get('workspace')
-            workspace_name = data.get('workspace_name', 'My Workspace')
 
-            # Обрабатываем 'personal' как специальный тип
-            if workspace_id == 'personal' or workspace_id == 'team':
-                workspace = Workspace.objects.filter(
-                    owner=user,
-                    is_personal=(workspace_id == 'personal')
-                ).first()
-                if not workspace:
-                    workspace = Workspace.objects.create(
-                        name=workspace_name,
-                        owner=user,
-                        is_personal=(workspace_id == 'personal')
-                    )
-            elif workspace_id:
+            if workspace_id in (None, '', 'main'):
+                workspace = get_main_workspace(user)
+            else:
                 try:
                     workspace = Workspace.objects.get(id=int(workspace_id), owner=user)
                 except (Workspace.DoesNotExist, ValueError):
                     return JsonResponse({'success': False, 'error': 'Рабочее пространство не найдено'}, status=404)
-            else:
-                # Создаём рабочее пространство по умолчанию
-                workspace = Workspace.objects.filter(owner=user, is_personal=True).first()
-                if not workspace:
-                    workspace = Workspace.objects.create(
-                        name='My Workspace',
-                        owner=user,
-                        is_personal=True
-                    )
 
             board = Board.objects.create(
                 title=title,
@@ -561,7 +599,10 @@ def api_task_create(request):
 
             # Пытаемся найти колонку, принадлежащую пользователю
             try:
-                column = Column.objects.get(id=column_id, board__workspace__owner=user)
+                column = Column.objects.filter(
+                    Q(board__workspace__owner=user) | Q(board__members=user),
+                    id=column_id,
+                ).distinct().get()
             except Column.DoesNotExist:
                 return JsonResponse({'success': False, 'error': 'Колонка не найдена'}, status=404)
 
@@ -615,11 +656,9 @@ def api_workspace_create(request):
 
         try:
             user = request.user
-
             workspace = Workspace.objects.create(
                 name=name,
                 description=data.get('description', ''),
-                is_personal=data.get('is_personal', False),
                 owner=user
             )
 
@@ -628,7 +667,6 @@ def api_workspace_create(request):
                 'workspace': {
                     'id': workspace.id,
                     'name': workspace.name,
-                    'is_personal': workspace.is_personal
                 }
             })
         except Exception:
@@ -782,14 +820,15 @@ def api_task_move(request, task_id):
 
     task = get_object_or_404(
         Task,
+        Q(column__board__workspace__owner=request.user) |
+        Q(column__board__members=request.user),
         id=task_id,
-        column__board__workspace__owner=request.user,
     )
 
     new_column = get_object_or_404(
         Column,
+        Q(board__workspace__owner=request.user) | Q(board__members=request.user),
         id=column_id,
-        board__workspace__owner=request.user,
     )
 
     task.column = new_column

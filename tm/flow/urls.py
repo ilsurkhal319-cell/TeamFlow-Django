@@ -2,7 +2,7 @@ from django.urls import path
 from flow.views import (
     board, dashboard, home, index, favorites, profile, archive,
     api_board_create, api_task_create, api_workspace_create, api_board_delete, api_board_favorite, api_board_archive,
-    api_boards_list, api_user_search,
+    api_boards_list, api_user_search, api_board_member_add,
     api_notifications_list, api_notifications_read, api_notifications_read_all, api_task_move
 )
 from .api_views import RecentActivityAPIView, TaskDetailAPIView, TaskListCreateAPIView
@@ -21,6 +21,7 @@ urlpatterns = [
     # API endpoints
     path('api/boards/', api_boards_list, name='api_boards_list'),
     path('api/users/search/', api_user_search, name='api_user_search'),
+    path('api/board/<int:board_id>/members/add/', api_board_member_add, name='api_board_member_add'),
     path('api/board/create/', api_board_create, name='api_board_create'),
     path('api/board/delete/<int:board_id>/', api_board_delete, name='api_board_delete'),
     path('api/board/favorite/<int:board_id>/', api_board_favorite, name='api_board_favorite'),

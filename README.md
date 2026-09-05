@@ -17,6 +17,7 @@ The project is a learning pet project focused on Django backend development and 
 
 - User registration, login and editable profiles
 - Workspaces, boards, columns and tasks
+- Board participants with owner-controlled access
 - Task priorities, due dates, labels, comments and notifications
 - Favorites and archived boards
 - Drag-and-drop task movement between columns
@@ -24,67 +25,71 @@ The project is a learning pet project focused on Django backend development and 
 - JSON and DRF API endpoints with authentication and object-level access checks
 - Recent activity panel on the dashboard
 
-## Quick Start With Docker
+## Быстрый запуск через Docker
 
-1. Copy the environment template:
+1. Скопируйте шаблон окружения:
 
-   ```powershell
-   Copy-Item .env.example .env
+   ```bash
+   cp .env.example .env
    ```
 
-2. Start the application and PostgreSQL:
+2. Запустите приложение и PostgreSQL:
 
-   ```powershell
+   ```bash
    docker compose up --build
    ```
 
-3. Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/).
+3. Откройте [http://127.0.0.1:8000/](http://127.0.0.1:8000/).
 
-Migrations run automatically when the `web` container starts. To create an administrator:
+Миграции применяются автоматически при запуске контейнера `web`. Чтобы создать администратора:
 
-```powershell
+```bash
 docker compose exec web python manage.py createsuperuser
 ```
 
-To stop the containers while preserving the database volume:
+Остановить контейнеры, сохранив данные PostgreSQL:
 
-```powershell
+```bash
 docker compose down
 ```
 
-## Local Development
+## Локальная разработка без Docker
 
-Create and activate a virtual environment, install dependencies and create `.env` from `.env.example`.
+Создайте виртуальное окружение, установите зависимости и скопируйте `.env.example` в `.env`.
 
-```powershell
+```bash
 python -m venv .venv
-.venv\Scripts\Activate.ps1
+source .venv/bin/activate
 pip install -r requirements.txt
 cd tm
 python manage.py migrate
 python manage.py runserver
 ```
 
-For local execution set `DB_HOST=127.0.0.1` in `.env`. Docker Compose overrides it with `db` inside the `web` container.
+Для локального запуска укажите `DB_HOST=127.0.0.1` в `.env`. Docker Compose автоматически переопределяет его на `db` внутри контейнера `web`.
 
-## Tests
+## Тесты
 
-Run the test suite locally:
+Запустите весь набор тестов:
 
-```powershell
+```bash
 cd tm
-python manage.py test flow
+python manage.py test
 ```
 
-Or run it inside the application container:
+Или внутри контейнера:
 
-```powershell
-docker compose exec web python manage.py test flow
+```bash
+docker compose exec web python manage.py test
 ```
 
-GitHub Actions runs the Django test suite against PostgreSQL for each push and pull request.
+GitHub Actions запускает тесты Django на PostgreSQL при каждом push и pull request.
 
-## Project Structure
+## Доступ к доскам
+
+Рабочее пространство принадлежит пользователю. Владелец может добавить пользователей на конкретную доску через окно приглашения. Участник видит эту доску и может работать с её задачами, но не может удалять доску или менять её состав.
+
+## Структура проекта
 
 ```text
 TeamFlow/
@@ -98,4 +103,3 @@ TeamFlow/
 ├── .env.example
 └── requirements.txt
 ```
-

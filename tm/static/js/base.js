@@ -10,8 +10,9 @@ function openBoardModal() {
     // Сбрасываем форму
     document.getElementById('boardTitle').value = '';
     document.getElementById('boardDescription').value = '';
-    document.getElementById('boardPrivate').checked = false;
-    document.getElementById('boardWorkspace').value = 'personal';
+    var workspaceSelect = document.getElementById('boardWorkspace');
+    var activeWorkspace = new URLSearchParams(window.location.search).get('workspace') || workspaceSelect.options[0]?.value;
+    workspaceSelect.value = workspaceSelect.querySelector('option[value="' + activeWorkspace + '"]') ? activeWorkspace : workspaceSelect.options[0]?.value;
 
     // Сбрасываем ошибку
     document.getElementById('boardTitle').classList.remove('border-red-500');

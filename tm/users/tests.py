@@ -29,3 +29,19 @@ class LoginViewTests(TestCase):
         })
 
         self.assertEqual(response.status_code, 302)
+        self.assertTrue(self.client.session.get_expire_at_browser_close())
+
+    def test_user_returns_to_requested_page_after_login(self):
+        CustomUser.objects.create_user(
+            username="profileuser",
+            email="profileuser@example.com",
+            password="StrongPassword123"
+        )
+
+        response = self.client.post(reverse("users:login"), {
+            "username": "profileuser",
+            "password": "StrongPassword123",
+            "next": reverse("flow:profile"),
+        })
+
+        self.assertRedirects(response, reverse("flow:profile"))

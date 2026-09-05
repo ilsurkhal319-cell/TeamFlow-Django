@@ -11,6 +11,7 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-zinc-950 text-zinc-100 min-h-screen">
+    <div class="hidden">{% csrf_token %}</div>
     {% block header %}
     <!-- Топ-хедер (по умолчанию) -->
     <header class="h-16 bg-zinc-950 border-b border-zinc-800 flex items-center justify-between px-6 fixed top-0 left-0 right-0 z-50">
@@ -24,7 +25,7 @@
                 </div>
                 <span class="text-xl font-semibold">TeamFlow</span>
             </a>
-            <button onclick="console.log('openBoardModal clicked'); if(typeof openBoardModal === 'function') { openBoardModal(); } else { alert('openBoardModal not found!'); }" class="bg-violet-600 hover:bg-violet-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:shadow-lg hover:shadow-violet-600/25 flex items-center gap-2">
+            <button type="button" onclick="openBoardModal()" class="hidden sm:flex bg-violet-600 hover:bg-violet-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all hover:shadow-lg hover:shadow-violet-600/25 items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
@@ -85,15 +86,13 @@
                         <div>
                             <label class="block text-sm font-medium text-zinc-300 mb-2">Рабочее пространство</label>
                             <select id="boardWorkspace" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 transition-colors">
-                                <option value="personal">Personal</option>
-                                <option value="team">Team</option>
+                                {% if request.user.is_authenticated %}
+                                    {% for workspace in request.user.owned_workspaces.all %}
+                                    <option value="{{ workspace.id }}">{{ workspace.name }}</option>
+                                    {% endfor %}
+                                {% endif %}
                             </select>
                         </div>
-                        <!-- Приватность -->
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" id="boardPrivate" class="w-4 h-4 rounded bg-zinc-950 border-zinc-700 text-violet-600 focus:ring-violet-600 focus:ring-offset-zinc-900">
-                            <span class="text-sm text-zinc-300">Сделать доску приватной</span>
-                        </label>
                     </div>
                     <!-- Кнопки -->
                     <div class="px-6 py-4 border-t border-zinc-800 flex gap-3">
@@ -137,25 +136,6 @@
                             <textarea id="workspaceDescription" placeholder="Кратко о пространстве..." rows="2"
                                 class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600 transition-colors resize-none"></textarea>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-zinc-300 mb-2">Тип</label>
-                            <div class="flex gap-3">
-                                <button type="button" onclick="selectWorkspaceType('personal')" id="typePersonal" class="flex-1 p-3 bg-zinc-950 rounded-xl border border-zinc-700 text-center transition-all">
-                                    <div class="w-8 h-8 bg-zinc-700 rounded-lg mx-auto mb-2 flex items-center justify-center text-sm font-semibold">P</div>
-                                    <p class="text-sm text-zinc-300">Personal</p>
-                                    <p class="text-xs text-zinc-500">Для личной работы</p>
-                                </button>
-                                <button type="button" onclick="selectWorkspaceType('team')" id="typeTeam" class="flex-1 p-3 bg-zinc-950 rounded-xl border border-zinc-700 text-center transition-all">
-                                    <div class="w-8 h-8 bg-violet-600 rounded-lg mx-auto mb-2 flex items-center justify-center text-sm font-semibold">T</div>
-                                    <p class="text-sm text-zinc-300">Team</p>
-                                    <p class="text-xs text-zinc-500">Для команды</p>
-                                </button>
-                            </div>
-                        </div>
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" id="workspacePrivate" class="w-4 h-4 rounded bg-zinc-950 border-zinc-700 text-violet-600 focus:ring-violet-600 focus:ring-offset-zinc-900">
-                            <span class="text-sm text-zinc-300">Сделать приватным</span>
-                        </label>
                     </div>
                     <div class="px-6 py-4 border-t border-zinc-800 flex gap-3">
                         <button onclick="closeCreateWorkspaceModal()" class="flex-1 py-3 px-4 rounded-xl border border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 font-medium transition-colors">
@@ -170,7 +150,7 @@
         </div>
 
         <!-- По центру -->
-        <div class="flex-1 max-w-md mx-8">
+        <div class="hidden flex-1 max-w-md mx-8 lg:block">
             <div class="relative">
                 <input type="text" placeholder="Поиск по доскам и задачам..." class="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-violet-600 transition-colors pl-10">
                 <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -205,16 +185,16 @@
                     <div id="notificationsList" class="max-h-[350px] overflow-y-auto">
                         <!-- Уведомления будут добавлены через JS -->
                     </div>
-                    <!-- Футер -->
-                    <div class="px-4 py-3 border-t border-zinc-800">
-                        <a href="#" class="text-sm text-violet-400 hover:text-violet-300 transition-colors">Показать все уведомления</a>
-                    </div>
                 </div>
             </div>
             <!-- Кнопка профиля -->
-            <button onclick="toggleProfileModal()" class="flex items-center gap-3 pl-4 border-l border-zinc-800 hover:bg-zinc-900 px-3 py-1.5 rounded-lg transition-colors">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=You" class="w-8 h-8 rounded-full">
-                <span class="text-sm text-zinc-300">{{ user.username }}</span>
+            <button type="button" onclick="toggleProfileModal()" class="flex items-center gap-2 sm:gap-3 sm:pl-4 sm:border-l border-zinc-800 hover:bg-zinc-900 px-2 sm:px-3 py-1.5 rounded-lg transition-colors">
+                {% if request.user.avatar %}
+                <img src="{{ request.user.avatar.url }}" alt="Аватар {{ request.user.username }}" class="w-8 h-8 rounded-full object-cover">
+                {% else %}
+                <span role="img" aria-label="Аватар {{ request.user.username }}" class="flex w-8 h-8 items-center justify-center rounded-full bg-violet-600 text-sm font-semibold text-white">{{ request.user.display_name|default:request.user.username|first|upper }}</span>
+                {% endif %}
+                <span class="hidden text-sm text-zinc-300 sm:inline">{{ request.user.display_name|default:request.user.username }}</span>
                 <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
@@ -223,15 +203,19 @@
             <!-- Модалка профиля -->
             <div id="profileModal" class="hidden fixed inset-0 z-[100]">
                 <div class="absolute inset-0 bg-black/50" onclick="closeProfileModal()"></div>
-                <div class="absolute right-6 top-16 w-[360px] bg-zinc-900 rounded-2xl border border-zinc-800 shadow-2xl overflow-hidden animate-profile-in">
+                <div class="absolute right-3 sm:right-6 top-16 w-[calc(100%-1.5rem)] max-w-[360px] bg-zinc-900 rounded-2xl border border-zinc-800 shadow-2xl overflow-hidden animate-profile-in">
                     <!-- Аватар и имя -->
                     <div class="flex flex-col items-center py-8 px-6 border-b border-zinc-800">
                         <div class="relative mb-4">
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=You" class="w-20 h-20 rounded-full border-4 border-zinc-800">
+                            {% if request.user.avatar %}
+                            <img src="{{ request.user.avatar.url }}" alt="Аватар {{ request.user.username }}" class="w-20 h-20 rounded-full border-4 border-zinc-800 object-cover">
+                            {% else %}
+                            <span role="img" aria-label="Аватар {{ request.user.username }}" class="flex w-20 h-20 items-center justify-center rounded-full border-4 border-zinc-800 bg-violet-600 text-2xl font-semibold text-white">{{ request.user.display_name|default:request.user.username|first|upper }}</span>
+                            {% endif %}
                             <span class="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 rounded-full border-2 border-zinc-900"></span>
                         </div>
-                        <h2 class="text-xl font-bold text-zinc-100">{{ user.username }}</h2>
-                        <p class="text-sm text-zinc-400">@{{ user.username }}</p>
+                        <h2 class="text-xl font-bold text-zinc-100">{{ request.user.display_name|default:request.user.username }}</h2>
+                        <p class="text-sm text-zinc-400">@{{ request.user.username }}</p>
                         <div class="flex items-center gap-1.5 mt-2 text-sm text-emerald-400">
                             <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
                             В сети
@@ -240,8 +224,8 @@
 
                     <!-- Информация о пользователе -->
                     <div class="px-6 py-4 border-b border-zinc-800 space-y-2">
-                        <p class="text-sm text-zinc-300">Full-stack разработчик</p>
-                        <p class="text-xs text-zinc-500">ils***@example.com</p>
+                        <p class="text-sm text-zinc-300">{{ request.user.bio|default:"Профиль TeamFlow"|truncatechars:90 }}</p>
+                        <p class="break-all text-xs text-zinc-500">{{ request.user.email }}</p>
                     </div>
 
                     <!-- Меню действий -->
@@ -253,18 +237,12 @@
                             </svg>
                             Профиль
                         </a>
-                        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors">
+                        <a href="{% url 'flow:profile' %}#settings" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                             </svg>
                             Настройки
-                        </a>
-                        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            Помощь
                         </a>
                     </nav>
 
@@ -286,7 +264,7 @@
     <div class="flex pt-16">
         {% block sidebar %}
         <!-- Сайдбар (по умолчанию) -->
-        <aside class="w-[280px] bg-zinc-900 border-r border-zinc-800 fixed left-0 top-16 bottom-0 flex flex-col">
+        <aside class="hidden w-[280px] bg-zinc-900 border-r border-zinc-800 fixed left-0 top-16 bottom-0 lg:flex flex-col">
             <!-- Меню -->
             <nav class="p-4 space-y-1">
                 <a href="{% url 'home' %}" data-page="home" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors">
@@ -326,20 +304,14 @@
                     </button>
                 </div>
                 <div class="space-y-1 sidebar-workspace-list">
-                    <button onclick="selectWorkspace('personal')" data-workspace="personal" class="workspace-btn flex items-center gap-3 px-3 py-2 w-full rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-sm">
-                        <span class="w-5 h-5 bg-zinc-700 rounded flex items-center justify-center text-xs">P</span>
-                        <span>Personal</span>
-                    </button>
-                    <button onclick="selectWorkspace('team')" data-workspace="team" class="workspace-btn flex items-center gap-3 px-3 py-2 w-full rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-sm">
-                        <span class="w-5 h-5 bg-violet-600 rounded flex items-center justify-center text-xs">T</span>
-                        <span>Team</span>
-                    </button>
-                </div>
-                <div title="Командные приглашения пока не подключены" class="mt-2 w-full flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-600 text-sm cursor-not-allowed">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
-                    </svg>
-                    Команда скоро
+                    {% if request.user.is_authenticated %}
+                        {% for workspace in request.user.owned_workspaces.all %}
+                        <button onclick="selectWorkspace('{{ workspace.id }}')" data-workspace="{{ workspace.id }}" class="workspace-btn flex items-center gap-3 px-3 py-2 w-full rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-sm">
+                            <span class="w-5 h-5 bg-violet-600 rounded flex items-center justify-center text-xs font-semibold text-white shrink-0">{{ workspace.name|first|upper }}</span>
+                            <span class="truncate">{{ workspace.name }}</span>
+                        </button>
+                        {% endfor %}
+                    {% endif %}
                 </div>
             </div>
 
@@ -355,18 +327,7 @@
                         </a>
                         {% endfor %}
                     {% else %}
-                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-zinc-800 text-zinc-100 transition-colors text-sm">
-                        <span class="w-2 h-2 rounded-full bg-violet-500"></span>
-                        Разработка TeamFlow
-                    </a>
-                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-sm">
-                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                        Маркетинг Q1
-                    </a>
-                    <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-sm">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                        Личные цели
-                    </a>
+                    <p class="px-3 py-2 text-sm text-zinc-500">Досок пока нет</p>
                     {% endif %}
                 </div>
             </div>
@@ -384,7 +345,7 @@
         {% endblock %}
 
         <!-- Основная область -->
-        <main class="{% block main_class %}flex-1 ml-[280px] p-8{% endblock %}">
+        <main class="{% block main_class %}min-w-0 flex-1 p-4 sm:p-6 lg:ml-[280px] lg:p-8{% endblock %}">
             {% block content %}{% endblock %}
         </main>
     </div>
@@ -394,20 +355,15 @@
 
     <script>
     // Выбранный тип рабочего пространства
-    let selectedWorkspaceType = 'personal';
 
     // Открыть модалку создания рабочего пространства
     function openCreateWorkspaceModal() {
         // Сбрасываем форму
         document.getElementById('workspaceName').value = '';
         document.getElementById('workspaceDescription').value = '';
-        document.getElementById('workspacePrivate').checked = false;
         document.getElementById('workspaceName').classList.remove('border-red-500');
         document.getElementById('workspaceNameError').classList.add('hidden');
 
-        // Сбрасываем тип
-        selectedWorkspaceType = 'personal';
-        updateWorkspaceTypeButtons();
 
         // Показываем модалку
         document.getElementById('workspaceModal').classList.remove('hidden');
@@ -422,29 +378,8 @@
         document.getElementById('workspaceModal').classList.add('hidden');
     }
 
-    // Выбрать тип рабочего пространства
-    function selectWorkspaceType(type) {
-        selectedWorkspaceType = type;
-        updateWorkspaceTypeButtons();
-    }
-
     // Обновить вид кнопок типа
-    function updateWorkspaceTypeButtons() {
-        var personalBtn = document.getElementById('typePersonal');
-        var teamBtn = document.getElementById('typeTeam');
 
-        if (selectedWorkspaceType === 'personal') {
-            personalBtn.classList.add('border-violet-600', 'ring-2', 'ring-violet-600', 'ring-offset-2', 'ring-offset-zinc-900');
-            personalBtn.classList.remove('border-zinc-700');
-            teamBtn.classList.remove('border-violet-600', 'ring-2', 'ring-violet-600', 'ring-offset-2', 'ring-offset-zinc-900');
-            teamBtn.classList.add('border-zinc-700');
-        } else {
-            teamBtn.classList.add('border-violet-600', 'ring-2', 'ring-violet-600', 'ring-offset-2', 'ring-offset-zinc-900');
-            teamBtn.classList.remove('border-zinc-700');
-            personalBtn.classList.remove('border-violet-600', 'ring-2', 'ring-violet-600', 'ring-offset-2', 'ring-offset-zinc-900');
-            personalBtn.classList.add('border-zinc-700');
-        }
-    }
 
     // Создать рабочее пространство
     function createWorkspace() {
@@ -465,14 +400,6 @@
         }
 
         var description = document.getElementById('workspaceDescription').value.trim();
-        var isPrivate = document.getElementById('workspacePrivate').checked;
-
-        console.log('Создание рабочего пространства:', {
-            name: name,
-            description: description,
-            type: selectedWorkspaceType,
-            isPrivate: isPrivate
-        });
 
         // Отправка данных на сервер
         var csrfToken = getCookie('csrftoken') || '';
@@ -486,7 +413,7 @@
             body: JSON.stringify({
                 name: name,
                 description: description,
-                is_personal: (selectedWorkspaceType === 'personal')
+                
             })
         })
         .then(function(response) {
@@ -499,7 +426,6 @@
 
                 // Добавляем новое рабочее пространство в сайдбар
                 var workspaceLists = document.querySelectorAll('.sidebar-workspace-list');
-                console.log('Found workspace lists:', workspaceLists.length);
                 if (workspaceLists.length > 0 && data.workspace) {
                     workspaceLists.forEach(function(workspaceList) {
                         var newWorkspaceBtn = document.createElement('button');
@@ -507,12 +433,12 @@
                         newWorkspaceBtn.setAttribute('data-workspace', data.workspace.id);
                         newWorkspaceBtn.className = 'workspace-btn flex items-center gap-3 px-3 py-2 w-full rounded-lg text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors text-sm';
 
-                        var iconClass = data.workspace.is_personal ? 'bg-zinc-700' : 'bg-violet-600';
-                        var iconLetter = data.workspace.is_personal ? 'P' : 'T';
+                        var iconLetter = (data.workspace.name || 'W').charAt(0).toUpperCase();
 
                         newWorkspaceBtn.innerHTML =
-                            '<span class="w-5 h-5 ' + iconClass + ' rounded flex items-center justify-center text-xs">' + iconLetter + '</span>' +
-                            '<span>' + data.workspace.name + '</span>';
+                            '<span class="w-5 h-5 bg-violet-600 rounded flex items-center justify-center text-xs font-semibold text-white shrink-0">' + iconLetter + '</span>' +
+                            '<span class="truncate"></span>';
+                        newWorkspaceBtn.querySelector('.truncate').textContent = data.workspace.name;
 
                         workspaceList.appendChild(newWorkspaceBtn);
                     });
@@ -537,7 +463,7 @@
 
 <script>
     // Текущее выбранное рабочее пространство
-    let currentWorkspace = 'personal';
+    let currentWorkspace = 'main';
 
     // Выбрать рабочее пространство
     function selectWorkspace(workspace) {
@@ -584,6 +510,8 @@
     }
 
     // Модалка приглашения в команду
+    var currentBoardId = '{{ board.id|default:"" }}';
+
     function openInviteModal() {
         document.getElementById('inviteModal').classList.remove('hidden');
         setTimeout(function() {
@@ -595,13 +523,6 @@
         document.getElementById('inviteModal').classList.add('hidden');
         document.getElementById('inviteSearch').value = '';
         document.getElementById('searchResults').innerHTML = '';
-    }
-
-    function copyInviteLink() {
-        const linkInput = document.getElementById('inviteLink');
-        linkInput.select();
-        document.execCommand('copy');
-        showInviteNotification('Скопировано!');
     }
 
     function showInviteNotification(message) {
@@ -645,7 +566,26 @@
     }
 
     function inviteUser(userId, username) {
-        showInviteNotification('Приглашение отправлено @' + username);
+        if (!currentBoardId) {
+            showInviteNotification('Откройте доску, чтобы добавить участника');
+            return;
+        }
+
+        fetch('/api/board/' + currentBoardId + '/members/add/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') || ''
+            },
+            body: JSON.stringify({user_id: userId})
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            showInviteNotification(data.success ? data.message : (data.error || 'Не удалось добавить участника'));
+        })
+        .catch(function() {
+            showInviteNotification('Ошибка при добавлении участника');
+        });
     }
 
     // Уведомления
@@ -826,24 +766,7 @@
             </div>
             <!-- Результаты поиска -->
             <div id="searchResults" class="space-y-2 mb-4 max-h-[200px] overflow-y-auto"></div>
-            <!-- Разделитель -->
-            <div class="border-t border-zinc-800 my-4"></div>
-            <!-- Приглашение по ссылке -->
-            <div>
-                <p class="text-sm font-medium text-zinc-300 mb-2">Или поделитесь ссылкой</p>
-                <div class="flex gap-2">
-                    <input type="text" id="inviteLink" readonly value="https://teamflow.app/join/abc123"
-                        class="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-zinc-100 focus:outline-none">
-                    <button onclick="copyInviteLink()" class="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors">
-                        Копировать
-                    </button>
-                </div>
-                <p id="inviteNotification" class="hidden mt-2 text-sm text-emerald-400 flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                </p>
-            </div>
+            <p id="inviteNotification" class="hidden mt-2 text-sm text-emerald-400"></p>
         </div>
     </div>
 </div>

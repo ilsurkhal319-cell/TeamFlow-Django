@@ -49,6 +49,9 @@ INSTALLED_APPS = [
 ]
 
 AUTH_USER_MODEL = 'users.CustomUser'
+LOGIN_URL = 'users:login'
+LOGIN_REDIRECT_URL = 'flow:home'
+LOGOUT_REDIRECT_URL = 'flow:index'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -147,4 +150,3 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 ADMIN_SITE_HEADER = "TeamFlow — Управление"
 ADMIN_SITE_TITLE = "TeamFlow Admin"
 ADMIN_INDEX_TITLE = "Панель управления"
-

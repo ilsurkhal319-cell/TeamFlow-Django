@@ -4,10 +4,9 @@ from .models import Workspace, Board, Column, Task, Label, Comment
 
 @admin.register(Workspace)
 class WorkspaceAdmin(admin.ModelAdmin):
-    list_display = ('name', 'owner', 'is_personal', 'created_at')
-    list_filter = ('is_personal', 'created_at')
+    list_display = ('name', 'owner', 'created_at')
+    list_filter = ('created_at',)
     search_fields = ('name', 'description')
-    filter_horizontal = ('members',)
 
 
 @admin.register(Board)
@@ -16,6 +15,7 @@ class BoardAdmin(admin.ModelAdmin):
     list_filter = ('is_favorite', 'is_archived', 'workspace')
     search_fields = ('title', 'description')
     raw_id_fields = ('created_by',)
+    filter_horizontal = ('members',)
 
 
 @admin.register(Column)

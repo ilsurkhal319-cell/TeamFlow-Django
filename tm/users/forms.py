@@ -35,7 +35,20 @@ class UserProfileForm(forms.ModelForm):
         fields = ['display_name', 'first_name', 'last_name', 'bio', 'avatar', 'phone']
         labels = {
             'display_name': 'Отображаемое имя',
+            'first_name': 'Имя',
+            'last_name': 'Фамилия',
             'bio': 'О себе',
             'avatar': 'Аватар',
             'phone': 'Телефон',
         }
+
+    def clean_avatar(self):
+        avatar = self.cleaned_data.get('avatar')
+        if not avatar or not hasattr(avatar, 'content_type'):
+            return avatar
+        if avatar.size > 5 * 1024 * 1024:
+            raise forms.ValidationError('Размер изображения не должен превышать 5 МБ.')
+        content_type = getattr(avatar, 'content_type', '')
+        if content_type not in {'image/jpeg', 'image/png', 'image/gif', 'image/webp'}:
+            raise forms.ValidationError('Поддерживаются JPG, PNG, GIF и WebP.')
+        return avatar

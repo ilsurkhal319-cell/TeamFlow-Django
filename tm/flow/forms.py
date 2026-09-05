@@ -7,7 +7,7 @@ class WorkspaceForm(forms.ModelForm):
 
     class Meta:
         model = Workspace
-        fields = ['name', 'description', 'is_personal']
+        fields = ['name', 'description']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent',
@@ -18,17 +18,12 @@ class WorkspaceForm(forms.ModelForm):
                 'rows': 3,
                 'placeholder': 'Описание (необязательно)',
             }),
-            'is_personal': forms.CheckboxInput(attrs={
-                'class': 'w-5 h-5 text-purple-600 rounded focus:ring-purple-500',
-            }),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['name'].label = "Название"
         self.fields['description'].label = "Описание"
-        self.fields['is_personal'].label = "Личное пространство"
-
 
 class BoardForm(forms.ModelForm):
     """Форма для создания и редактирования доски"""

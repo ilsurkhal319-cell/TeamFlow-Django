@@ -1,0 +1,19 @@
+<div class="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
+    {% for item in recent_activity %}
+    <a href="{% url 'flow:board_detail' item.url_id %}" class="activity-item flex items-center gap-4 border-b border-zinc-800 p-4 last:border-b-0">
+        <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full {% if item.kind == 'task' %}bg-violet-600/20 text-violet-400{% else %}bg-blue-600/20 text-blue-400{% endif %}">
+            {% if item.kind == 'task' %}
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            {% else %}
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            {% endif %}
+        </span>
+        <span class="min-w-0 flex-1">
+            <span class="block truncate text-sm text-zinc-200">{% if item.kind == 'task' %}Обновлена задача{% else %}Обновлена доска{% endif %} «{{ item.title }}»</span>
+            <span class="text-xs text-zinc-500">{{ item.date|timesince }} назад</span>
+        </span>
+    </a>
+    {% empty %}
+    <p class="p-6 text-center text-sm text-zinc-500">Активности пока нет</p>
+    {% endfor %}
+</div>

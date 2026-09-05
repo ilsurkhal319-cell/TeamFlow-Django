@@ -1,7 +1,6 @@
 function closeRecentActivityModal() {
     document.getElementById("recentActivityModal").classList.add("hidden");
 }
-
 async function openRecentActivityModal() {
     const modal = document.getElementById("recentActivityModal");
     const list = document.getElementById("recentActivityList");

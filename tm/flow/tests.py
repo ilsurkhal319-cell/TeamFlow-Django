@@ -8,6 +8,14 @@ from rest_framework.test import APIClient
 
 
 class ProfileViewTests(TestCase):
+    def test_anonymous_user_is_redirected_to_login(self):
+        response = self.client.get(reverse("flow:profile"))
+
+        self.assertRedirects(
+            response,
+            f'{reverse("users:login")}?next={reverse("flow:profile")}',
+        )
+
     def test_user_can_update_profile(self):
         user = CustomUser.objects.create_user(
             username="profile-user",
@@ -20,6 +28,8 @@ class ProfileViewTests(TestCase):
             reverse("flow:profile"),
             {
                 "display_name": "Profile Name",
+                "first_name": "Profile",
+                "last_name": "User",
                 "bio": "Backend developer",
                 "phone": "+79990000000",
             },
@@ -28,8 +38,43 @@ class ProfileViewTests(TestCase):
         self.assertRedirects(response, reverse("flow:profile"))
         user.refresh_from_db()
         self.assertEqual(user.display_name, "Profile Name")
+        self.assertEqual(user.first_name, "Profile")
+        self.assertEqual(user.last_name, "User")
         self.assertEqual(user.bio, "Backend developer")
         self.assertEqual(user.phone, "+79990000000")
+
+    def test_profile_uses_user_boards_and_tasks(self):
+        user = CustomUser.objects.create_user(
+            username="dashboard-user",
+            email="dashboard@example.com",
+            password="StrongPassword123",
+        )
+        workspace = Workspace.objects.create(
+            name="Personal Space",
+            owner=user,
+        )
+        board = Board.objects.create(
+            title="Real Project",
+            workspace=workspace,
+            created_by=user,
+        )
+        column = Column.objects.create(board=board, title="Готово")
+        Task.objects.create(
+            column=column,
+            title="Real Task",
+            created_by=user,
+            assignee=user,
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("flow:profile"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Real Project")
+        self.assertContains(response, "Real Task")
+        self.assertEqual(response.context["board_count"], 1)
+        self.assertEqual(response.context["task_count"], 1)
+        self.assertEqual(response.context["completed_task_count"], 1)
 
 
 class LegacyTaskApiTests(TestCase):
@@ -65,12 +110,27 @@ class WorkspaceModelTests(TestCase):
             name="Test Workspace",
             description="Test description",
             owner=user,
-            is_personal=True
         )
 
         self.assertEqual(workspace.name, "Test Workspace")
         self.assertEqual(workspace.owner, user)
-        self.assertTrue(workspace.is_personal)
+
+    def test_sidebar_shows_workspace_letter_icon_after_reload(self):
+        user = CustomUser.objects.create_user(
+            username="workspace-icon-user",
+            email="workspace-icon@example.com",
+            password="StrongPassword123",
+        )
+        Workspace.objects.create(name="Маркетинг", owner=user)
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("flow:home"))
+
+        self.assertContains(response, "Маркетинг")
+        self.assertContains(
+            response,
+            'class="w-5 h-5 bg-violet-600 rounded flex items-center justify-center text-xs font-semibold text-white shrink-0">М</span>',
+        )
 
 class BoardModelTests(TestCase):
     def test_board_can_be_created(self):
@@ -83,7 +143,6 @@ class BoardModelTests(TestCase):
         workspace = Workspace.objects.create(
             name="Test Workspace",
             owner=user,
-            is_personal=True
         )
 
         board = Board.objects.create(
@@ -109,7 +168,6 @@ class TaskModelTests(TestCase):
         workspace = Workspace.objects.create(
             name="Test Workspace",
             owner=user,
-            is_personal=True
         )
 
         board = Board.objects.create(
@@ -154,7 +212,6 @@ class BoardAccessTests(TestCase):
         workspace = Workspace.objects.create(
             name="Owner Workspace",
             owner=owner,
-            is_personal=True
         )
 
         board = Board.objects.create(
@@ -167,7 +224,60 @@ class BoardAccessTests(TestCase):
 
         response = self.client.get(reverse("flow:board_detail", args=[board.id]))
 
-        self.assertNotEqual(response.context["board"], board)
+        self.assertEqual(response.status_code, 404)
+
+    def test_board_member_can_open_board_and_create_task(self):
+        owner = CustomUser.objects.create_user(
+            username="member_owner",
+            email="member_owner@example.com",
+            password="StrongPassword123",
+        )
+        member = CustomUser.objects.create_user(
+            username="board_member",
+            email="board_member@example.com",
+            password="StrongPassword123",
+        )
+        workspace = Workspace.objects.create(name="Shared Workspace", owner=owner)
+        board = Board.objects.create(title="Shared Board", workspace=workspace, created_by=owner)
+        board.members.add(member)
+        column = Column.objects.create(board=board, title="To Do", order=0)
+
+        self.client.force_login(member)
+        board_response = self.client.get(reverse("flow:board_detail", args=[board.id]))
+        task_response = self.client.post(
+            reverse("flow:api_task_create"),
+            data=json.dumps({"title": "Member task", "column_id": column.id}),
+            content_type="application/json",
+        )
+
+        self.assertEqual(board_response.context["board"], board)
+        self.assertEqual(task_response.status_code, 200)
+        self.assertTrue(Task.objects.filter(title="Member task", created_by=member).exists())
+
+    def test_owner_can_add_board_member(self):
+        owner = CustomUser.objects.create_user(
+            username="invite_owner",
+            email="invite_owner@example.com",
+            password="StrongPassword123",
+        )
+        member = CustomUser.objects.create_user(
+            username="invite_member",
+            email="invite_member@example.com",
+            password="StrongPassword123",
+        )
+        workspace = Workspace.objects.create(name="Invite Workspace", owner=owner)
+        board = Board.objects.create(title="Invite Board", workspace=workspace, created_by=owner)
+
+        self.client.force_login(owner)
+        response = self.client.post(
+            reverse("flow:api_board_member_add", args=[board.id]),
+            data=json.dumps({"user_id": member.id}),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(board.members.filter(id=member.id).exists())
+        self.assertTrue(Notification.objects.filter(user=member, type="invite").exists())
 
 class TaskApiTests(TestCase):
     def test_authenticated_user_can_create_task(self):
@@ -180,7 +290,6 @@ class TaskApiTests(TestCase):
         workspace = Workspace.objects.create(
             name="API Workspace",
             owner=user,
-            is_personal=True
         )
 
         board = Board.objects.create(
@@ -222,7 +331,6 @@ class TaskApiPermissionTests(TestCase):
         workspace = Workspace.objects.create(
             name="API Workspace",
             owner=user,
-            is_personal=True
         )
 
         board = Board.objects.create(
@@ -268,7 +376,6 @@ class TaskApiAccessTests(TestCase):
         workspace = Workspace.objects.create(
             name="Owner Workspace",
             owner=owner,
-            is_personal=True
         )
 
         board = Board.objects.create(
@@ -321,7 +428,6 @@ class MentionServiceTests(TestCase):
         workspace = Workspace.objects.create(
             name="Mention Workspace",
             owner=author,
-            is_personal=True
         )
 
         board = Board.objects.create(
@@ -363,7 +469,6 @@ class MentionServiceTests(TestCase):
         workspace = Workspace.objects.create(
             name="Self Mention Workspace",
             owner=author,
-            is_personal=True,
         )
         board = Board.objects.create(
             title="Self Mention Board",
@@ -400,7 +505,6 @@ class TaskMoveApiTests(TestCase):
         workspace = Workspace.objects.create(
             name="Move Workspace",
             owner=user,
-            is_personal=True,
         )
         board = Board.objects.create(
             title="Move Board",
@@ -437,7 +541,6 @@ class DRFTaskApiTests(TestCase):
         workspace = Workspace.objects.create(
             name="DRF Workspace",
             owner=self.user,
-            is_personal=True,
         )
         board = Board.objects.create(
             title="DRF Board",
@@ -538,7 +641,6 @@ class RecentActivityApiTests(TestCase):
         workspace = Workspace.objects.create(
             name="Activity Workspace",
             owner=user,
-            is_personal=True,
         )
         board = Board.objects.create(
             title="Activity Board",

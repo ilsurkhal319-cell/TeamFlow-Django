@@ -4,6 +4,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from django.db.models import Q
+
 from .models import Board, Task
 from .serializers import TaskSerializer
 
@@ -15,7 +17,11 @@ class TaskListCreateAPIView(generics.ListCreateAPIView):
     def get_queryset(self):
         return (
             Task.objects
-            .filter(column__board__workspace__owner=self.request.user)
+            .filter(
+                Q(column__board__workspace__owner=self.request.user)
+                | Q(column__board__members=self.request.user)
+            )
+            .distinct()
             .select_related("column__board")
             .order_by("order")
         )
@@ -23,7 +29,10 @@ class TaskListCreateAPIView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         column = serializer.validated_data["column"]
 
-        if column.board.workspace.owner_id != self.request.user.id:
+        if (
+            column.board.workspace.owner_id != self.request.user.id
+            and not column.board.members.filter(id=self.request.user.id).exists()
+        ):
             raise PermissionDenied(
                 "Нельзя создавать задачи в чужой колонке."
             )
@@ -36,8 +45,9 @@ class TaskDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return Task.objects.filter(
-            column__board__workspace__owner=self.request.user
-        )
+            Q(column__board__workspace__owner=self.request.user)
+            | Q(column__board__members=self.request.user)
+        ).distinct()
 
     def perform_update(self, serializer):
         column = serializer.validated_data.get(
@@ -45,7 +55,10 @@ class TaskDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
             serializer.instance.column,
         )
 
-        if column.board.workspace.owner_id != self.request.user.id:
+        if (
+            column.board.workspace.owner_id != self.request.user.id
+            and not column.board.members.filter(id=self.request.user.id).exists()
+        ):
             raise PermissionDenied(
                 "Нельзя перемещать задачу в чужую колонку."
             )
@@ -59,13 +72,20 @@ class RecentActivityAPIView(APIView):
     def get(self, request):
         recent_tasks = (
             Task.objects
-            .filter(column__board__workspace__owner=request.user)
+            .filter(
+                Q(column__board__workspace__owner=request.user)
+                | Q(column__board__members=request.user)
+            )
+            .distinct()
             .select_related("column__board")
             .order_by("-updated_at")[:10]
         )
         recent_boards = (
             Board.objects
-            .filter(workspace__owner=request.user)
+            .filter(
+                Q(workspace__owner=request.user) | Q(members=request.user)
+            )
+            .distinct()
             .order_by("-updated_at")[:10]
         )
 

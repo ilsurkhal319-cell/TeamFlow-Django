@@ -37,7 +37,11 @@
                     {% endif %}
                     <!-- Аватарки участников -->
                     <div class="flex items-center -space-x-2 mb-4">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ request.user.username }}" class="w-7 h-7 rounded-full border-2 border-zinc-900">
+                        {% if request.user.avatar %}
+                        <img src="{{ request.user.avatar.url }}" alt="Аватар {{ request.user.username }}" class="w-7 h-7 rounded-full border-2 border-zinc-900 object-cover">
+                        {% else %}
+                        <span role="img" aria-label="Аватар {{ request.user.username }}" class="flex w-7 h-7 items-center justify-center rounded-full border-2 border-zinc-900 bg-violet-600 text-xs font-semibold text-white">{{ request.user.display_name|default:request.user.username|first|upper }}</span>
+                        {% endif %}
                     </div>
                     <!-- Футер -->
                     <div class="pt-4 border-t border-zinc-800 text-sm text-zinc-400 flex justify-between">
@@ -70,7 +74,7 @@
         </div>
         {% endfor %}
         <!-- Карточка создания доски -->
-        <div onclick="console.log('Create board card clicked'); if(typeof openBoardModal === 'function') { openBoardModal(); } else { alert('openBoardModal not found!'); }" class="bg-zinc-900 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 group relative board-card hover:-translate-y-1 hover:brightness-110 cursor-pointer border-2 border-dashed border-zinc-700 hover:border-violet-500">
+        <button type="button" onclick="openBoardModal()" class="bg-zinc-900 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 group relative board-card hover:-translate-y-1 hover:brightness-110 cursor-pointer border-2 border-dashed border-zinc-700 hover:border-violet-500">
             <div class="p-6 h-full flex flex-col items-center justify-center min-h-[200px]">
                 <div class="w-14 h-14 rounded-2xl bg-zinc-800 group-hover:bg-violet-600 flex items-center justify-center mb-4 transition-colors">
                     <svg class="w-7 h-7 text-zinc-400 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,7 +83,7 @@
                 </div>
                 <span class="text-zinc-400 group-hover:text-white font-medium transition-colors">Создать доску</span>
             </div>
-        </div>
+        </button>
     {% else %}
         <!-- Пустое состояние -->
         <div class="col-span-full flex flex-col items-center justify-center py-20">
@@ -90,12 +94,12 @@
             </div>
             <h2 class="text-2xl font-semibold mb-2">Досок пока нет</h2>
             <p class="text-zinc-400 mb-8">Создайте свою первую доску, чтобы начать управлять задачами</p>
-            <a href="#" onclick="openBoardModal(); return false;" class="bg-violet-600 hover:bg-violet-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all hover:shadow-lg hover:shadow-violet-600/25 flex items-center gap-2">
+            <button type="button" onclick="openBoardModal()" class="bg-violet-600 hover:bg-violet-700 text-white px-6 py-3 rounded-xl text-base font-semibold transition-all hover:shadow-lg hover:shadow-violet-600/25 flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
                 Создать доску
-            </a>
+            </button>
         </div>
     {% endif %}
 

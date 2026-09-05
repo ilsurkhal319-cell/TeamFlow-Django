@@ -37,7 +37,6 @@ taskCards.forEach(card => {
     card.addEventListener('dragstart', handleDragStart);
     card.addEventListener('dragend', handleDragEnd);
 });
-
 // Добавляем обработчики событий к зонам Drop
 dropZones.forEach(zone => {
     zone.addEventListener('dragover', handleDragOver);
@@ -552,33 +551,3 @@ if (boardContainer) {
 document.addEventListener('wheel', function(e) {
     // Не делаем preventDefault - пусть работает нативный скролл
 }, { passive: true });
-
-// Toggle Invite dropdown
-function toggleInviteDropdown() {
-    const dropdown = document.getElementById('inviteDropdown');
-    dropdown.classList.toggle('hidden');
-}
-
-// Копирование ссылки
-function copyInviteLink() {
-    const linkInput = document.getElementById('inviteLink');
-    linkInput.select();
-    document.execCommand('copy');
-
-    const notification = document.getElementById('copyNotification');
-    notification.classList.remove('hidden');
-
-    setTimeout(() => {
-        notification.classList.add('hidden');
-    }, 2000);
-}
-
-// Закрытие dropdown при клике вне
-document.addEventListener('click', function(e) {
-    const dropdown = document.getElementById('inviteDropdown');
-    const button = e.target.closest('button[onclick="toggleInviteDropdown()"]');
-
-    if (!button && !dropdown.contains(e.target)) {
-        dropdown.classList.add('hidden');
-    }
-});

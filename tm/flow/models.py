@@ -4,7 +4,7 @@ from django.utils import timezone
 
 
 class Workspace(models.Model):
-    """Рабочее пространство (Personal / Team)"""
+    """Рабочее пространство пользователя"""
     name = models.CharField(max_length=120, verbose_name="Название")
     description = models.TextField(blank=True, null=True)
 
@@ -13,13 +13,8 @@ class Workspace(models.Model):
         on_delete=models.CASCADE,
         related_name="owned_workspaces"
     )
-    members = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
-        related_name="workspaces",
-        blank=True
-    )
 
-    is_personal = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -41,6 +36,12 @@ class Board(models.Model):
         Workspace,
         on_delete=models.CASCADE,
         related_name="boards"
+    )
+
+    members = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="board_members",
+        blank=True
     )
 
     color = models.CharField(max_length=7, default="#8B5CF6")  # hex цвет
