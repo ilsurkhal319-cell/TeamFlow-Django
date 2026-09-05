@@ -18,7 +18,7 @@ The project is a learning pet project focused on Django backend development and 
 - User registration, login and editable profiles
 - Workspaces, boards, columns and tasks
 - Board participants with owner-controlled access
-- Joining a board with a one-time shareable code
+- Joining a board with a shareable code
 - Task priorities, due dates, labels, comments and notifications
 - Favorites and archived boards
 - Drag-and-drop task movement between columns
