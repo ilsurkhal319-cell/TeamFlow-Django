@@ -112,6 +112,8 @@
     box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
 }
 .column {
+    flex: 1 1 0;
+    min-width: 260px;
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: visible;
 }
@@ -132,7 +134,8 @@
 }
 
 .column.collapsed {
-    min-width: 64px;
+    flex: 0 0 68px;
+    min-width: 68px;
 }
 
 .column.collapsed .rounded-t-3xl {

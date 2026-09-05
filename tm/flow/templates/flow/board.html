@@ -57,10 +57,10 @@
 
 {% block content %}
 <!-- Основная рабочая область (без flex контейнера, т.к. сайдбара нет) -->
-<div class="flex gap-6 min-h-[calc(100vh-80px)] overflow-x-auto overflow-y-auto scroll-smooth pb-20">
+<div class="flex w-full gap-6 min-h-[calc(100vh-80px)] overflow-x-auto overflow-y-auto scroll-smooth pb-20">
     {% for column in columns %}
     <!-- Колонка {{ column.title }} -->
-    <div class="column w-[340px] shrink-0 flex flex-col transition-all duration-300" data-column="{{ column.id }}">
+    <div class="column flex min-w-0 flex-col transition-all duration-300" data-column="{{ column.id }}">
         <div class="bg-zinc-900 rounded-t-3xl p-4 border-b border-zinc-800">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
