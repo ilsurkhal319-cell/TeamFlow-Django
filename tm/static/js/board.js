@@ -371,6 +371,11 @@ function createTaskCard(title, description, priority, taskId) {
 
     // Описание по умолчанию, если не указано
     const descText = description || 'Описание задачи';
+    const currentUserAvatar = window.teamflowCurrentUserAvatar || '';
+    const currentUserInitial = window.teamflowCurrentUserInitial || '?';
+    const currentUserMarkup = currentUserAvatar
+        ? `<img src="${escapeHtml(currentUserAvatar)}" alt="Ваш аватар" class="w-7 h-7 rounded-full object-cover">`
+        : `<span role="img" aria-label="Ваш аватар" class="flex w-7 h-7 items-center justify-center rounded-full bg-violet-600 text-xs font-semibold text-white">${escapeHtml(currentUserInitial)}</span>`;
 
     card.innerHTML = `
         <div class="flex items-start justify-between mb-3">
@@ -380,7 +385,7 @@ function createTaskCard(title, description, priority, taskId) {
         <p class="text-zinc-400 text-sm line-clamp-2 mb-3">${escapeHtml(descText)}</p>
         <div class="flex items-center justify-between pt-3 border-t border-zinc-800">
             <div class="flex items-center gap-2">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=You" class="w-7 h-7 rounded-full">
+                ${currentUserMarkup}
             </div>
             <div class="flex items-center gap-1 text-sm text-zinc-400">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

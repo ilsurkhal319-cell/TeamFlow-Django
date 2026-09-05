@@ -45,3 +45,16 @@ class LoginViewTests(TestCase):
         })
 
         self.assertRedirects(response, reverse("flow:profile"))
+
+    def test_user_can_logout(self):
+        user = CustomUser.objects.create_user(
+            username="logoutuser",
+            email="logout@example.com",
+            password="StrongPassword123",
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(reverse("users:logout"))
+
+        self.assertRedirects(response, reverse("users:login"))
+        self.assertNotIn("_auth_user_id", self.client.session)
