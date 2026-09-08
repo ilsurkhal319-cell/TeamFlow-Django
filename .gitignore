@@ -1,4 +1,5 @@
 .venv/
+venv/
 __pycache__/
 *.pyc
 *.pyo
@@ -12,3 +13,6 @@ tm/data_backup*.json
 .env
 .idea/
 .DS_Store
+
+tm/.claude/
+tm/promt.txt
