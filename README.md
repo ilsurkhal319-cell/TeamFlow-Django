@@ -1,30 +1,67 @@
 # TeamFlow
 
-TeamFlow is a Trello-style task management application for teams. Users can create workspaces, boards, columns and tasks, then track work through a simple visual interface.
+TeamFlow — веб-приложение для управления задачами и проектами в командах в формате Kanban. Пользователь создаёт рабочие пространства, доски, колонки и задачи, а затем отслеживает работу через визуальный интерфейс.
 
-The project is a learning pet project focused on Django backend development and production-like local tooling.
+Это учебный pet-проект, посвящённый разработке backend на Django и настройке окружения, близкого к production.
 
-## Stack
+## Стек
 
 - Python 3.13
-- Django 5 and Django REST Framework
+- Django 5 и Django REST Framework
 - PostgreSQL 17
-- Docker and Docker Compose
-- HTML, Tailwind CSS and JavaScript
-- Django TestCase and GitHub Actions
+- Docker и Docker Compose
+- HTML, Tailwind CSS и JavaScript
+- Django TestCase и GitHub Actions
 
-## Features
+## Возможности
 
-- User registration, login and editable profiles
-- Workspaces, boards, columns and tasks
-- Board participants with owner-controlled access
-- Joining a board with a shareable code
-- Task priorities, due dates, labels, comments and notifications
-- Favorites and archived boards
-- Drag-and-drop task movement between columns
-- Search tasks on a board
-- JSON and DRF API endpoints with authentication and object-level access checks
-- Recent activity panel on the dashboard
+- Регистрация, вход и редактирование профиля
+- Рабочие пространства, доски, колонки и задачи
+- Участники досок с контролем доступа со стороны владельца
+- Присоединение к доске по уникальному коду
+- Приоритеты, сроки, метки, комментарии и уведомления для задач
+- Избранные и архивные доски
+- Перемещение задач между колонками перетаскиванием
+- Поиск задач внутри доски
+- JSON- и DRF API с аутентификацией и проверкой доступа к объектам
+- Панель последних действий на дашборде
+
+## Архитектура
+
+Приложение построено как Django-монолит: HTML-интерфейс и API используют общую бизнес-логику, модели и базу данных.
+
+### Основные слои
+
+- `tm/tm/settings.py` — настройки Django, базы данных, приложений и окружения.
+- `tm/tm/urls.py` — корневой маршрутизатор проекта.
+- `tm/users/` — пользовательская модель, регистрация, вход и профили.
+- `tm/flow/models.py` — доменные модели рабочих пространств, досок, колонок, задач, меток, комментариев и уведомлений.
+- `tm/flow/views.py` — HTML-представления дашборда, досок, задач и операций с участниками.
+- `tm/flow/api_views.py` — API-представления на Django REST Framework.
+- `tm/flow/serializers.py` и `tm/flow/forms.py` — преобразование данных API и проверка данных HTML-форм.
+- `tm/flow/templates/` — серверные Django-шаблоны интерфейса.
+- `tm/static/` — JavaScript и стили интерфейса.
+- `tm/flow/migrations/` — версионирование схемы базы данных.
+
+### Как обрабатывается запрос
+
+1. Браузер отправляет запрос на адрес из `tm/tm/urls.py`.
+2. Django передаёт его соответствующему view или API-view.
+3. Представление проверяет аутентификацию и права пользователя.
+4. ORM Django читает или изменяет данные PostgreSQL.
+5. Пользователь получает HTML-страницу или JSON-ответ.
+
+### Модель доступа к доскам
+
+- Рабочее пространство принадлежит своему владельцу.
+- Доска связана с рабочим пространством, а владелец рабочего пространства имеет права владельца доски.
+- Участники хранятся в связи `Board.members` и получают доступ только к доскам, в которые были добавлены.
+- Уникальный код доски используется для присоединения новых участников.
+- Участник может работать с задачами доски, но менять состав участников и удалять доску может только владелец.
+
+### Инфраструктура
+
+Docker Compose запускает два сервиса: `web` с Django и `db` с PostgreSQL. При старте `web` сначала применяет миграции, затем запускает сервер разработки. Секреты и настройки подключения хранятся в `.env` и не добавляются в Git.
 
 ## Быстрый запуск через Docker
 
@@ -84,7 +121,7 @@ python manage.py test
 docker compose exec web python manage.py test
 ```
 
-GitHub Actions запускает тесты Django на PostgreSQL при каждом push и pull request.
+GitHub Actions запускает тесты Django на PostgreSQL при каждой отправке изменений и каждом pull request.
 
 ## Доступ к доскам
 
@@ -95,9 +132,9 @@ GitHub Actions запускает тесты Django на PostgreSQL при ка�
 ```text
 TeamFlow/
 ├── tm/
-│   ├── flow/          # workspaces, boards, tasks and API
-│   ├── users/         # custom user model and authentication
-│   ├── static/        # JavaScript and styles
+│   ├── flow/          # рабочие пространства, доски, задачи и API
+│   ├── users/         # пользовательская модель и аутентификация
+│   ├── static/        # JavaScript и стили
 │   └── manage.py
 ├── Dockerfile
 ├── compose.yaml
